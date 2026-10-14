@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider } from 'react-router'
+import { ToastProvider } from '@/shared/ui/ToastProvider'
 import { routes } from '@/app/routes'
 
 /** Renders the real route tree at `path`, with a fresh, retry-free QueryClient. */
@@ -14,7 +15,9 @@ export function renderRoute(path: string) {
 
   const utils = render(
     <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
+      <ToastProvider>
+        <RouterProvider router={router} />
+      </ToastProvider>
     </QueryClientProvider>,
   )
   return { ...utils, user, router, queryClient }
