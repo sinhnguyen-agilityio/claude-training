@@ -5,10 +5,12 @@ import { UsersTable } from '@/features/users/components/UsersTable'
 import { UsersToolbar } from '@/features/users/components/UsersToolbar'
 import { useUsersListParams } from '@/features/users/hooks/useUsersListParams'
 import { lastPageOf, type UsersQueryInput } from '@/features/users/query'
-import { TableSkeleton } from '@/shared/ui/states'
+import { Button } from '@/shared/ui/Button'
+import { EmptyState, ErrorState, TableSkeleton } from '@/shared/ui/states'
 
 export function UsersListPage() {
-  const { state, setPage, setSearch, setRole, setStatus, setSort } = useUsersListParams()
+  const { state, hasFilters, setPage, setSearch, setRole, setStatus, setSort, clearFilters } =
+    useUsersListParams()
   const query: UsersQueryInput = useMemo(
     () => ({
       q: state.q || undefined,
@@ -20,7 +22,7 @@ export function UsersListPage() {
     }),
     [state],
   )
-  const { data } = useUsers(query)
+  const { data, error, refetch, isFetching } = useUsers(query)
 
   // A page past the end (e.g. ?page=99) is replaced with the last page (SPEC F1).
   const lastPage = data ? lastPageOf(data.total, data.pageSize) : undefined
@@ -29,6 +31,44 @@ export function UsersListPage() {
       setPage(lastPage, { replace: true })
     }
   }, [data?.page, lastPage, state.page, setPage])
+
+  function renderResults() {
+    if (data) {
+      if (data.total === 0) {
+        return hasFilters ? (
+          <EmptyState
+            title="No users match your filters"
+            description="Try a different search, or clear the filters."
+            action={<Button onClick={clearFilters}>Clear filters</Button>}
+          />
+        ) : (
+          <EmptyState title="No users yet" />
+        )
+      }
+      return (
+        <>
+          <UsersTable users={data.data} />
+          <Pagination
+            page={data.page}
+            pageSize={data.pageSize}
+            total={data.total}
+            onPageChange={setPage}
+          />
+        </>
+      )
+    }
+    if (error) {
+      return (
+        <ErrorState
+          title="Could not load users"
+          message={error.message}
+          onRetry={() => void refetch()}
+          retrying={isFetching}
+        />
+      )
+    }
+    return <TableSkeleton rows={10} columns={5} label="Loading users" />
+  }
 
   return (
     <section className="space-y-4">
@@ -40,19 +80,7 @@ export function UsersListPage() {
         onStatusChange={setStatus}
         onSortChange={setSort}
       />
-      {data ? (
-        <>
-          <UsersTable users={data.data} />
-          <Pagination
-            page={data.page}
-            pageSize={data.pageSize}
-            total={data.total}
-            onPageChange={setPage}
-          />
-        </>
-      ) : (
-        <TableSkeleton rows={10} columns={5} label="Loading users" />
-      )}
+      {renderResults()}
     </section>
   )
 }
