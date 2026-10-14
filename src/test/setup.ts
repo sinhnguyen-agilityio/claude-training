@@ -11,9 +11,10 @@ beforeAll(() => {
   server.listen({ onUnhandledFrame: 'error' })
 })
 
-// Every test starts from the seed data.
+// Every test starts from the seed data and a fresh tab.
 beforeEach(() => {
   localStorage.clear()
+  sessionStorage.clear()
 })
 
 afterEach(() => {

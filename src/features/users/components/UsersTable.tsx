@@ -1,5 +1,6 @@
 import { Link } from 'react-router'
 import { RoleBadge, StatusBadge } from '@/features/users/components/Badges'
+import { DeleteUserButton } from '@/features/users/components/DeleteUserButton'
 import { fullName } from '@/features/users/labels'
 import type { User } from '@/features/users/schema'
 import { formatDate } from '@/shared/lib/format'
@@ -55,7 +56,7 @@ export function UsersTable({ users }: { users: User[] }) {
                   <time dateTime={user.createdAt}>{formatDate(user.createdAt)}</time>
                 </td>
                 <td className="px-4 py-3">
-                  <div className="flex justify-end gap-3 whitespace-nowrap">
+                  <div className="flex items-center justify-end gap-3 whitespace-nowrap">
                     <Link
                       to={`/users/${user.id}`}
                       className={linkClass}
@@ -70,6 +71,7 @@ export function UsersTable({ users }: { users: User[] }) {
                     >
                       Edit
                     </Link>
+                    <DeleteUserButton user={user} variant="ghost" className="text-red-700" />
                   </div>
                 </td>
               </tr>
