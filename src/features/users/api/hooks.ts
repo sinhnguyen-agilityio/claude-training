@@ -51,8 +51,10 @@ export function useDeleteUser() {
   return useMutation({
     mutationFn: usersApi.remove,
     onSuccess: async (_data, id) => {
-      queryClient.removeQueries({ queryKey: userKeys.detail(id) })
       await queryClient.invalidateQueries({ queryKey: userKeys.lists() })
+      // Removed last, right before the caller navigates away, so an open detail page does not
+      // refetch the deleted user and flash "User not found".
+      queryClient.removeQueries({ queryKey: userKeys.detail(id) })
     },
   })
 }

@@ -1,10 +1,11 @@
 import { useEffect, useMemo } from 'react'
-import { Link } from 'react-router'
+import { Link, useLocation } from 'react-router'
 import { useUsers } from '@/features/users/api/hooks'
 import { Pagination } from '@/features/users/components/Pagination'
 import { UsersTable } from '@/features/users/components/UsersTable'
 import { UsersToolbar } from '@/features/users/components/UsersToolbar'
 import { useUsersListParams } from '@/features/users/hooks/useUsersListParams'
+import { rememberListSearch } from '@/features/users/listLocation'
 import { lastPageOf, type UsersQueryInput } from '@/features/users/query'
 import { Button } from '@/shared/ui/Button'
 import { EmptyState, ErrorState, TableSkeleton } from '@/shared/ui/states'
@@ -24,6 +25,9 @@ export function UsersListPage() {
     [state],
   )
   const { data, error, refetch, isFetching } = useUsers(query)
+
+  const { search } = useLocation()
+  useEffect(() => rememberListSearch(search), [search])
 
   // A page past the end (e.g. ?page=99) is replaced with the last page (SPEC F1).
   const lastPage = data ? lastPageOf(data.total, data.pageSize) : undefined

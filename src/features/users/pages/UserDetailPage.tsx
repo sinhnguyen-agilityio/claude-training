@@ -1,10 +1,12 @@
 import type { ReactNode } from 'react'
-import { Link, useParams } from 'react-router'
+import { Link, useNavigate, useParams } from 'react-router'
 import { isApiError } from '@/features/users/api/client'
 import { useUser } from '@/features/users/api/hooks'
 import { RoleBadge, StatusBadge } from '@/features/users/components/Badges'
+import { DeleteUserButton } from '@/features/users/components/DeleteUserButton'
 import { UserNotFound } from '@/features/users/components/UserNotFound'
 import { fullName } from '@/features/users/labels'
+import { lastListPath } from '@/features/users/listLocation'
 import { formatDateTime } from '@/shared/lib/format'
 import { ErrorState, Skeleton } from '@/shared/ui/states'
 
@@ -15,6 +17,7 @@ const actionLinkClass =
 export function UserDetailPage() {
   const { id = '' } = useParams()
   const { data: user, error, refetch, isFetching } = useUser(id)
+  const navigate = useNavigate()
 
   if (isApiError(error, 404)) return <UserNotFound />
 
@@ -40,7 +43,7 @@ export function UserDetailPage() {
 
   return (
     <section className="mx-auto max-w-3xl space-y-6">
-      <Link to="/users" className="text-sm text-blue-700 hover:underline">
+      <Link to={lastListPath()} className="text-sm text-blue-700 hover:underline">
         ← Back to users
       </Link>
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -52,6 +55,7 @@ export function UserDetailPage() {
           >
             Edit
           </Link>
+          <DeleteUserButton user={user} onDeleted={() => void navigate(lastListPath())} />
         </div>
       </div>
       <dl className="divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white">
