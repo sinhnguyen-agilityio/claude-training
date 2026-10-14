@@ -9,7 +9,7 @@ The full spec and acceptance criteria are in [docs/SPEC.md](docs/SPEC.md).
 ## Tech stack
 
 React 19 · TypeScript (strict) · Vite · React Router · TanStack Query · React Hook Form + Zod ·
-Tailwind CSS · MSW · Vitest + Testing Library · Playwright · oxlint + Prettier · GitLab CI
+Tailwind CSS · MSW · Vitest + Testing Library · Playwright · oxlint + Prettier
 
 ## Run it from scratch
 
@@ -66,5 +66,5 @@ docs/               # Spec and decisions
 
 1. Every piece of work starts as a GitLab issue (use the **Feature** or **Bug** template).
 2. Branch from `main`: `feat/<issue>-<slug>` or `fix/<issue>-<slug>`.
-3. Open a merge request that references the issue (`Closes #<n>`). CI must be green.
+3. Open a merge request that references the issue (`Closes #<n>`). Run `pnpm lint`, `pnpm typecheck`, `pnpm test:coverage` and `pnpm e2e` before asking for review.
 4. Bug fixes start with a failing test that reproduces the bug.
