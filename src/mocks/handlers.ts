@@ -1,17 +1,12 @@
 import { delay, http, HttpResponse } from 'msw'
 import type { z } from 'zod'
+import type { ApiErrorBody } from '@/features/users/api/client'
 import { usersQuerySchema } from '@/features/users/query'
 import { userCreateSchema, userUpdateSchema } from '@/features/users/schema'
 import { EmailTakenError, type UserRepository } from '@/mocks/repository'
 
 /** Fixed latency so loading states are visible (SPEC §4). */
 export const MOCK_DELAY_MS = 300
-
-/** Error body for every non-2xx response (SPEC §4). */
-export interface ApiErrorBody {
-  message: string
-  fieldErrors?: Record<string, string>
-}
 
 interface HandlerOptions {
   delayMs?: number
