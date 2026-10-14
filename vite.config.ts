@@ -21,6 +21,8 @@ export default defineConfig({
       include: ['src/**/*.{ts,tsx}'],
       exclude: ['src/**/*.test.{ts,tsx}', 'src/test/**', 'src/main.tsx', 'src/**/*.d.ts'],
       reporter: ['text', 'html', 'cobertura'],
+      // SPEC §6: unit/component coverage must stay at or above 80%.
+      thresholds: { lines: 80, statements: 80, functions: 80, branches: 80 },
     },
   },
 })
