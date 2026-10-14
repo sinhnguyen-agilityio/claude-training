@@ -63,7 +63,7 @@ describe('CreateUserPage', () => {
     await user.click(screen.getByRole('button', { name: 'Create user' }))
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/users'))
-    expect(screen.getByRole('status')).toHaveTextContent('User created')
+    expect(screen.getByRole('status', { name: 'Notifications' })).toHaveTextContent('User created')
     const firstRow = (await screen.findAllByRole('row'))[1]!
     expect(within(firstRow).getByRole('rowheader')).toHaveTextContent('Zoe Adams')
     expect(within(firstRow).getByText('zoe@example.com')).toBeInTheDocument()

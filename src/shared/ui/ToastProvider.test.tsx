@@ -21,7 +21,7 @@ function renderToasts() {
       <Trigger />
     </ToastProvider>,
   )
-  return { user, region: screen.getByRole('status') }
+  return { user, region: screen.getByRole('status', { name: 'Notifications' }) }
 }
 
 afterEach(() => {

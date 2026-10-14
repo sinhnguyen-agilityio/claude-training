@@ -59,13 +59,17 @@ export function useDeleteUser() {
   })
 }
 
-/** Restores the seed data and drops every cached users query. */
+/**
+ * Restores the seed data. Cached users are dropped without refetching (an open detail page may
+ * show a user that no longer exists), and lists are reset and refetched.
+ */
 export function useResetData() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: usersApi.reset,
     onSuccess: async () => {
-      await queryClient.resetQueries({ queryKey: userKeys.all })
+      queryClient.removeQueries({ queryKey: userKeys.details() })
+      await queryClient.resetQueries({ queryKey: userKeys.lists() })
     },
   })
 }

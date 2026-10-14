@@ -8,7 +8,7 @@ test('F5: delete a user from the list', async ({ page }) => {
   await expect(dialog).toBeVisible()
   await dialog.getByRole('button', { name: 'Delete' }).click()
 
-  await expect(page.getByRole('status')).toContainText('User deleted')
+  await expect(page.getByRole('status', { name: 'Notifications' })).toContainText('User deleted')
   await expect(page.getByRole('navigation', { name: 'Pagination' })).toContainText('of 24')
   await expect(page.getByRole('rowheader', { name: 'Ben Wright' })).toHaveCount(0)
 })

@@ -5,7 +5,8 @@ import { useBlocker } from 'react-router'
  * Asks before leaving while `dirty` (SPEC F4): in-app navigation is held by a router blocker
  * (render a confirmation while `blocker.state === 'blocked'`), and reload or closing the tab
  * triggers the browser's own prompt. Call `allowNavigation()` right before navigating on purpose,
- * e.g. after a successful save.
+ * e.g. after a successful save. A navigation whose state has `discardChanges: true` is never held
+ * (used when the user already confirmed losing everything, e.g. Reset demo data).
  */
 export function useUnsavedChangesGuard(dirty: boolean) {
   const allowed = useRef(false)
@@ -14,6 +15,7 @@ export function useUnsavedChangesGuard(dirty: boolean) {
     ({ currentLocation, nextLocation }) =>
       dirty &&
       !allowed.current &&
+      !discardsChanges(nextLocation.state) &&
       (currentLocation.pathname !== nextLocation.pathname ||
         currentLocation.search !== nextLocation.search),
   )
@@ -35,4 +37,13 @@ export function useUnsavedChangesGuard(dirty: boolean) {
   }, [])
 
   return { blocker, allowNavigation }
+}
+
+function discardsChanges(state: unknown) {
+  return (
+    typeof state === 'object' &&
+    state !== null &&
+    'discardChanges' in state &&
+    state.discardChanges === true
+  )
 }

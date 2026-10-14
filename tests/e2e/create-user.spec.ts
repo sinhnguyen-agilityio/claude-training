@@ -11,7 +11,7 @@ test('F2: create a user and see it first in the list', async ({ page }) => {
   await page.getByLabel('Role').selectOption('editor')
   await page.getByRole('button', { name: 'Create user' }).click()
 
-  await expect(page.getByRole('status')).toContainText('User created')
+  await expect(page.getByRole('status', { name: 'Notifications' })).toContainText('User created')
   await expect(page).toHaveURL(/\/users$/)
   const firstRow = page.getByRole('row').nth(1)
   await expect(firstRow.getByRole('rowheader')).toHaveText('Zoe Adams')
