@@ -5,7 +5,9 @@ import { isApiError } from '@/features/users/api/client'
 import { emptyUserFormValues, type UserFormValues } from '@/features/users/formValues'
 import { roleOptions, statusOptions } from '@/features/users/labels'
 import { userCreateSchema, type UserCreate } from '@/features/users/schema'
+import { useUnsavedChangesGuard } from '@/shared/hooks/useUnsavedChangesGuard'
 import { Button } from '@/shared/ui/Button'
+import { ConfirmDialog } from '@/shared/ui/ConfirmDialog'
 import { SelectField, TextField } from '@/shared/ui/fields'
 
 const fieldNames = ['firstName', 'lastName', 'email', 'phone', 'role', 'status'] as const
@@ -25,6 +27,8 @@ export interface UserFormProps {
   onSubmit: (values: UserCreate) => Promise<void>
   /** Keeps Submit disabled until a value differs from `defaultValues` (SPEC F4). */
   requireChanges?: boolean
+  /** Asks before leaving with unsaved changes (SPEC F4). */
+  guardUnsavedChanges?: boolean
 }
 
 /** The create/edit user form (SPEC F2, F4). Errors show after blur or submit. */
@@ -34,6 +38,7 @@ export function UserForm({
   cancelTo,
   onSubmit,
   requireChanges = false,
+  guardUnsavedChanges = false,
 }: UserFormProps) {
   const {
     register,
@@ -45,11 +50,15 @@ export function UserForm({
     defaultValues,
     mode: 'onTouched',
   })
+  const { blocker, allowNavigation } = useUnsavedChangesGuard(guardUnsavedChanges && isDirty)
 
   const submit = handleSubmit(async (values) => {
+    // The page navigates away after a successful save; that must not trigger the guard.
+    allowNavigation()
     try {
       await onSubmit(values)
     } catch (error) {
+      allowNavigation(false)
       const fieldErrors = isApiError(error) ? Object.entries(error.fieldErrors) : []
       const known = fieldErrors.filter(([field]) => fieldNames.includes(field as never))
       for (const [field, message] of known) {
@@ -132,6 +141,16 @@ export function UserForm({
           {isSubmitting ? 'Saving…' : submitLabel}
         </Button>
       </div>
+      <ConfirmDialog
+        open={blocker.state === 'blocked'}
+        title="Discard unsaved changes?"
+        description="You have changes that have not been saved. If you leave now, they will be lost."
+        confirmLabel="Leave page"
+        cancelLabel="Stay"
+        tone="danger"
+        onConfirm={() => blocker.proceed?.()}
+        onCancel={() => blocker.reset?.()}
+      />
     </form>
   )
 }
