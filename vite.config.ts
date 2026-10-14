@@ -19,7 +19,14 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       include: ['src/**/*.{ts,tsx}'],
-      exclude: ['src/**/*.test.{ts,tsx}', 'src/test/**', 'src/main.tsx', 'src/**/*.d.ts'],
+      exclude: [
+        'src/**/*.test.{ts,tsx}',
+        'src/test/**',
+        'src/main.tsx',
+        // Needs a real service worker; covered by the E2E smoke test.
+        'src/mocks/browser.ts',
+        'src/**/*.d.ts',
+      ],
       reporter: ['text', 'html'],
       // SPEC §6: unit/component coverage must stay at or above 80%.
       thresholds: { lines: 80, statements: 80, functions: 80, branches: 80 },
