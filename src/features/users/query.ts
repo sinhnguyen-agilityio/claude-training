@@ -34,3 +34,8 @@ export interface UsersPage {
   page: number
   pageSize: number
 }
+
+/** The last page number for `total` items; at least 1, even when there are none. */
+export function lastPageOf(total: number, pageSize: number) {
+  return Math.max(1, Math.ceil(total / pageSize))
+}
