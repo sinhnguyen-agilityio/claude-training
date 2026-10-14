@@ -36,14 +36,17 @@ export function EmptyState({
   title,
   description,
   action,
+  titleAs: Title = 'p',
 }: {
   title: string
   description?: string
   action?: ReactNode
+  /** Use `h1` when the empty state is the whole page. */
+  titleAs?: 'p' | 'h1' | 'h2'
 }) {
   return (
     <div className="rounded-lg border border-dashed border-slate-300 bg-white px-6 py-12 text-center">
-      <p className="text-base font-medium text-slate-800">{title}</p>
+      <Title className="text-base font-medium text-slate-800">{title}</Title>
       {description && <p className="mt-1 text-sm text-slate-600">{description}</p>}
       {action && <div className="mt-4">{action}</div>}
     </div>
