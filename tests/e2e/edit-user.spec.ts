@@ -11,7 +11,7 @@ test('F4: edit a user and see the change on the detail page', async ({ page }) =
   await page.getByLabel('Phone').fill('+1 555 0199')
   await save.click()
 
-  await expect(page.getByRole('status')).toContainText('User updated')
+  await expect(page.getByRole('status', { name: 'Notifications' })).toContainText('User updated')
   await expect(page.getByRole('heading', { name: 'Ben Wright' })).toBeVisible()
   await expect(page.getByText('+1 555 0199')).toBeVisible()
   await expect(page.getByText('Active', { exact: true })).toBeVisible()

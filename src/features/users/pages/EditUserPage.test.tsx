@@ -49,7 +49,7 @@ describe('EditUserPage', () => {
     expect(await screen.findByRole('heading', { name: 'Anna Kowalski' })).toBeInTheDocument()
     expect(router.state.location.pathname).toBe(`/users/${anna.id}`)
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
-    expect(screen.getByRole('status')).toHaveTextContent('User updated')
+    expect(screen.getByRole('status', { name: 'Notifications' })).toHaveTextContent('User updated')
     expect(screen.getByText('Inactive')).toBeInTheDocument()
   })
 

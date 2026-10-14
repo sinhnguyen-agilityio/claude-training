@@ -30,7 +30,7 @@ describe('Delete user from the list', () => {
 
     await waitFor(() => expect(screen.getByText('Showing 1–10 of 24')).toBeInTheDocument())
     expect(rowNames()).not.toContain('Ben Wright')
-    expect(screen.getByRole('status')).toHaveTextContent('User deleted')
+    expect(screen.getByRole('status', { name: 'Notifications' })).toHaveTextContent('User deleted')
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
   })
 
@@ -101,7 +101,7 @@ describe('Delete user from the detail page', () => {
     expect(router.state.location.search).toBe('?role=viewer&sort=name&order=desc')
     expect(screen.queryByText('User not found')).not.toBeInTheDocument()
     await waitFor(() => expect(rowNames()).not.toContain('Ben Wright'))
-    expect(screen.getByRole('status')).toHaveTextContent('User deleted')
+    expect(screen.getByRole('status', { name: 'Notifications' })).toHaveTextContent('User deleted')
   })
 
   it('returns to the plain list when no list was visited', async () => {
