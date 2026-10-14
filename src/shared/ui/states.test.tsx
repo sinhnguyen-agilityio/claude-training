@@ -26,6 +26,11 @@ describe('EmptyState', () => {
     expect(screen.getByRole('button', { name: 'Clear filters' })).toBeInTheDocument()
   })
 
+  it('can render the title as a heading', () => {
+    render(<EmptyState title="User not found" titleAs="h1" />)
+    expect(screen.getByRole('heading', { level: 1, name: 'User not found' })).toBeInTheDocument()
+  })
+
   it('works with a title only', () => {
     render(<EmptyState title="Nothing here" />)
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
