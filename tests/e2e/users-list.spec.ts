@@ -30,3 +30,25 @@ test('F1: the table scrolls inside its container on a 375 px screen', async ({ p
   )
   expect(pageScrolls).toBe(false)
 })
+
+test('F1: search, filter and sort, then reload to the same view', async ({ page }) => {
+  await page.goto('/users')
+  const pagination = page.getByRole('navigation', { name: 'Pagination' })
+  await expect(pagination).toContainText('Showing 1–10 of 25')
+
+  await page.getByRole('searchbox', { name: 'Search' }).fill('ann')
+  await page.getByRole('combobox', { name: 'Role' }).selectOption('admin')
+  await page.getByRole('combobox', { name: 'Sort by' }).selectOption({ label: 'Name A–Z' })
+
+  const names = page.getByRole('rowheader')
+  await expect(names).toHaveText(['Anna Kowalski', 'Hannah Lee'])
+  // Param order depends on when the debounced search lands, so compare them as a set.
+  await expect
+    .poll(() => Object.fromEntries(new URL(page.url()).searchParams))
+    .toEqual({ q: 'ann', role: 'admin', sort: 'name', order: 'asc' })
+
+  await page.reload()
+  await expect(names).toHaveText(['Anna Kowalski', 'Hannah Lee'])
+  await expect(page.getByRole('searchbox', { name: 'Search' })).toHaveValue('ann')
+  await expect(page.getByRole('combobox', { name: 'Role' })).toHaveValue('admin')
+})
