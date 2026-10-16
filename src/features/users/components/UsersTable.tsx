@@ -71,7 +71,7 @@ export function UsersTable({ users }: { users: User[] }) {
                     >
                       Edit
                     </Link>
-                    <DeleteUserButton user={user} variant="ghost" className="text-red-700" />
+                    <DeleteUserButton user={user} appearance="text" />
                   </div>
                 </td>
               </tr>

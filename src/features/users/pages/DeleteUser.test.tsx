@@ -85,6 +85,34 @@ describe('Delete user from the list', () => {
   })
 })
 
+// jsdom applies no Tailwind CSS, so these check the classes; the E2E spec checks the real styles.
+describe('Delete button hover style', () => {
+  it('on the list, hovering an enabled button makes the text bold and blue, with a pointer', async () => {
+    renderRoute('/users')
+    await screen.findByRole('table', { name: 'Users' })
+    const button = screen.getByRole('button', { name: 'Delete Ben Wright' })
+
+    expect(button).toHaveClass(
+      'text-red-700',
+      'enabled:cursor-pointer',
+      'enabled:hover:font-bold',
+      'enabled:hover:text-[#1d4ed8]',
+    )
+    expect(button.className).not.toMatch(/hover:bg-/)
+    // The hidden bold copy of the label reserves its width, so the button never resizes.
+    expect(within(button).getByText('Delete')).toHaveClass('after:font-bold')
+  })
+
+  it('on the detail page, the button keeps its own style', async () => {
+    renderRoute(`/users/${ben.id}`)
+    await screen.findByRole('heading', { name: 'Ben Wright' })
+    const button = screen.getByRole('button', { name: 'Delete Ben Wright' })
+
+    expect(button).toHaveClass('bg-red-600', 'hover:bg-red-700')
+    expect(button).not.toHaveClass('enabled:hover:font-bold')
+  })
+})
+
 describe('Delete user from the detail page', () => {
   it('returns to the list with the last-used filters', async () => {
     const { user, router } = renderRoute('/users?role=viewer&sort=name&order=desc')
