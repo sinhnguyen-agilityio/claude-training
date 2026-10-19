@@ -87,8 +87,10 @@ Request flow: page → `features/users/api/hooks.ts` (TanStack Query) → `api/c
   are cleared before each test, so every test starts from the seed data.
 - `asyncUtilTimeout` is raised to 3 s in `src/test/setup.ts` because the 300 ms search debounce
   plus a request can exceed 1 s under a coverage run. Wait on content, never on fixed timeouts.
-- jsdom applies no CSS. Check visual behaviour (hover, computed colors, sizes) in Playwright.
-  Tailwind v4 computes its palette colors as `oklch(...)`, not hex or rgb.
+- jsdom applies no CSS, so unit and component tests never assert styling: no Tailwind class
+  names (`toHaveClass`, `className`) and no computed styles. Check visual behaviour (hover,
+  colors, sizes, cursor) only in Playwright, against computed styles. Tailwind v4 computes its
+  palette colors as `oklch(...)`, not hex or rgb.
 - E2E runs against the production build (`pnpm build && pnpm preview --port 4173`) and reuses a
   server that is already running. `tests/e2e/accessibility.spec.ts` covers axe checks and the
   375 px layout. SPEC §6 requires an E2E journey for each feature.
@@ -120,8 +122,8 @@ Request flow: page → `features/users/api/hooks.ts` (TanStack Query) → `api/c
   `renderRoute()` and override endpoints with `server.use(...)`.
 - Never wait on fixed timeouts in tests (`setTimeout`, `waitForTimeout`). Wait for content to
   appear.
-- Never assert CSS behaviour (hover, colors, sizes) in jsdom unit tests alone. Verify it in
-  Playwright.
+- Never assert styling in jsdom tests, not even class names. Check it in Playwright (see
+  Testing).
 - Never use `any`, enums or parameter properties in app code (strict TS, `erasableSyntaxOnly`).
 - Never add features listed as out of scope in SPEC §7 (auth, a real backend, bulk actions,
   import/export, i18n, avatars) without an issue that changes the spec.
