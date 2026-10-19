@@ -104,3 +104,24 @@ Request flow: page → `features/users/api/hooks.ts` (TanStack Query) → `api/c
   hover classes can silently beat the caller's.
 - Requirements: accessible (labelled inputs, keyboard-operable dialogs, focus management) and
   responsive down to 375 px.
+
+## Never do
+
+- Never create a branch, commit or push without asking first, and never commit to `main`
+  directly. All changes reach `main` through a merge request.
+- Never skip the pre-commit hook (`--no-verify`), and never lower the 80% coverage threshold to
+  get a run passing.
+- Never change validation rules on only one side. Edit `schema.ts` / `query.ts`, which both the
+  form and the mock API use.
+- Never change the existing seed users in `mocks/seed.ts` casually. Unit and E2E tests rely on
+  their exact values.
+- Never disable or bypass MSW in production builds. It is the only API (SPEC §2).
+- Never mock TanStack Query hooks or `fetch` in component tests. Render the route with
+  `renderRoute()` and override endpoints with `server.use(...)`.
+- Never wait on fixed timeouts in tests (`setTimeout`, `waitForTimeout`). Wait for content to
+  appear.
+- Never assert CSS behaviour (hover, colors, sizes) in jsdom unit tests alone. Verify it in
+  Playwright.
+- Never use `any`, enums or parameter properties in app code (strict TS, `erasableSyntaxOnly`).
+- Never add features listed as out of scope in SPEC §7 (auth, a real backend, bulk actions,
+  import/export, i18n, avatars) without an issue that changes the spec.
