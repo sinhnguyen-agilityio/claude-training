@@ -32,6 +32,28 @@ test('the list Delete button turns its text bold and blue on hover, at a fixed s
     })
 })
 
+test('the detail page Delete button keeps its own style: darker background, same text and size', async ({
+  page,
+}) => {
+  await page.goto('/users')
+  await page.getByRole('link', { name: 'View Ben Wright' }).click()
+  await expect(page.getByRole('heading', { name: 'Ben Wright' })).toBeVisible()
+  const button = page.getByRole('button', { name: 'Delete Ben Wright' })
+
+  const rest = await style(button)
+  await button.hover()
+
+  await expect
+    .poll(async () => (await style(button)).backgroundColor)
+    .not.toBe(rest.backgroundColor)
+  expect(await style(button)).toMatchObject({
+    fontWeight: rest.fontWeight,
+    color: rest.color,
+    width: rest.width,
+    height: rest.height,
+  })
+})
+
 test('a disabled list Delete button gets no hover effect', async ({ page }) => {
   await page.goto('/users')
   const button = page.getByRole('button', { name: 'Delete Ben Wright' })
