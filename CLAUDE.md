@@ -122,8 +122,9 @@ Request flow: page → `features/users/api/hooks.ts` (TanStack Query) → `api/c
 - Never wait on real fixed timeouts in tests (`setTimeout` sleeps, Playwright `waitForTimeout`).
   Wait for content to appear. For time-based behaviour with no content to wait for (e.g. toast
   auto-dismiss), use `vi.useFakeTimers()` and `vi.advanceTimersByTime()`.
-- Never assert CSS in jsdom tests, including Tailwind class names. jsdom applies no CSS, so check
-  visual behaviour (hover, computed colors, sizes) only in Playwright.
+- Never assert CSS in jsdom tests, including Tailwind class names (`toHaveClass`, `className`).
+  jsdom applies no CSS, so check visual behaviour (hover, computed colors, sizes) only in
+  Playwright.
 - Never use `any`, enums or parameter properties in app code.
 - Never add features listed as out of scope in SPEC §7 (auth, a real backend, bulk actions,
   import/export, i18n, avatars) without an issue that changes the spec.
