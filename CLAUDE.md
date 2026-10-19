@@ -52,14 +52,12 @@ Request flow: page → `features/users/api/hooks.ts` (TanStack Query) → `api/c
   `features/users/query.ts` (list query params) are imported by both the UI and the mock API. The
   form validates with `userCreateSchema` through `zodResolver`, and the MSW handler parses the
   request body with the same schema. The list page parses URL params with `usersQuerySchema`'s
-  field schemas, and the handler parses the query string with the whole schema. Change rules in
-  those files, never in only one side.
+  field schemas, and the handler parses the query string with the whole schema.
 - **The mock API is wired twice from the same factory.** `createHandlers(repository, { delayMs })`
   is used by `mocks/browser.ts` (service worker, 300 ms latency, started in `main.tsx` before
   React renders) and by `mocks/node.ts` (Vitest, no latency). The repository takes injectable
   `storage`, `now` and `generateId` for tests, and reseeds itself when storage is empty or fails
-  schema validation. The seed data (`mocks/seed.ts`) is a fixed set of 25 users that tests rely on
-  by exact value.
+  schema validation. The seed data (`mocks/seed.ts`) is a fixed set of 25 users.
 - **Errors:** every non-2xx response becomes an `ApiError` with `status` and `fieldErrors`
   (status 0 means a network failure). `UserForm` maps `fieldErrors` onto form fields with
   `setError` (e.g. a 409 on email) and shows anything else as a root error. Pages pass an
@@ -80,15 +78,15 @@ Request flow: page → `features/users/api/hooks.ts` (TanStack Query) → `api/c
 
 ## Testing
 
-- Component tests render the **real route tree** with `renderRoute(path)` from
-  `src/test/renderWithProviders.tsx`, which returns `{ user, router, queryClient }`. They go
-  through the MSW node server rather than mocking hooks. Override one endpoint with
-  `server.use(http.…)`. Handlers are reset after each test, and `localStorage`/`sessionStorage`
-  are cleared before each test, so every test starts from the seed data.
+- `renderRoute(path)` from `src/test/renderWithProviders.tsx` renders the **real route tree** and
+  returns `{ user, router, queryClient }`. Requests go to the MSW node server (`mocks/node.ts`);
+  override one endpoint with `server.use(http.…)`. Handlers are reset after each test, and
+  `localStorage`/`sessionStorage` are cleared before each test, so every test starts from the seed
+  data.
 - `asyncUtilTimeout` is raised to 3 s in `src/test/setup.ts` because the 300 ms search debounce
-  plus a request can exceed 1 s under a coverage run. Wait on content, never on fixed timeouts.
-- jsdom applies no CSS. Check visual behaviour (hover, computed colors, sizes) in Playwright.
-  Tailwind v4 computes its palette colors as `oklch(...)`, not hex or rgb.
+  plus a request can exceed 1 s under a coverage run.
+- jsdom applies no CSS. Tailwind v4 computes its palette colors as `oklch(...)`, not hex or rgb,
+  which matters when asserting computed colors in Playwright.
 - E2E runs against the production build (`pnpm build && pnpm preview --port 4173`) and reuses a
   server that is already running. `tests/e2e/accessibility.spec.ts` covers axe checks and the
   375 px layout. SPEC §6 requires an E2E journey for each feature.
@@ -96,7 +94,7 @@ Request flow: page → `features/users/api/hooks.ts` (TanStack Query) → `api/c
 ## Conventions
 
 - Import through the `@/` alias (→ `src/`). TypeScript is strict with `noUncheckedIndexedAccess`
-  and `erasableSyntaxOnly` (no enums or parameter properties), and app code has no `any`.
+  and `erasableSyntaxOnly`.
 - Feature code lives in `src/features/users/` (api, components, hooks, pages, plus the schema,
   query and label modules). Reusable UI, hooks and utils live in `src/shared/`.
 - Styling is Tailwind v4 (`@import 'tailwindcss'` in `index.css`, no config file). `Button`
@@ -112,16 +110,20 @@ Request flow: page → `features/users/api/hooks.ts` (TanStack Query) → `api/c
 - Never skip the pre-commit hook (`--no-verify`), and never lower the 80% coverage threshold to
   get a run passing.
 - Never change validation rules on only one side. Edit `schema.ts` / `query.ts`, which both the
-  form and the mock API use.
+  form and the mock API import.
 - Never change the existing seed users in `mocks/seed.ts` casually. Unit and E2E tests rely on
   their exact values.
-- Never disable or bypass MSW in production builds. It is the only API (SPEC §2).
-- Never mock TanStack Query hooks or `fetch` in component tests. Render the route with
-  `renderRoute()` and override endpoints with `server.use(...)`.
-- Never wait on fixed timeouts in tests (`setTimeout`, `waitForTimeout`). Wait for content to
-  appear.
-- Never assert CSS behaviour (hover, colors, sizes) in jsdom unit tests alone. Verify it in
-  Playwright.
-- Never use `any`, enums or parameter properties in app code (strict TS, `erasableSyntaxOnly`).
+- Never stop the MSW worker from starting in production builds (e.g. by gating it on
+  `import.meta.env.DEV`). It is the only API (SPEC §2). MSW's own `'bypass'` options, such as
+  `onUnhandledFrame: 'bypass'` in `mocks/browser.ts`, are intended.
+- Never mock TanStack Query hooks or `fetch` in tests. Network goes through the MSW node server,
+  overridden with `server.use(...)`. Tests of pages and routes render the real route tree with
+  `renderRoute()`. Shared UI components and hooks, which have no route, may be rendered directly.
+- Never wait on real fixed timeouts in tests (`setTimeout` sleeps, Playwright `waitForTimeout`).
+  Wait for content to appear. For time-based behaviour with no content to wait for (e.g. toast
+  auto-dismiss), use `vi.useFakeTimers()` and `vi.advanceTimersByTime()`.
+- Never assert CSS in jsdom tests, including Tailwind class names. jsdom applies no CSS, so check
+  visual behaviour (hover, computed colors, sizes) only in Playwright.
+- Never use `any`, enums or parameter properties in app code.
 - Never add features listed as out of scope in SPEC §7 (auth, a real backend, bulk actions,
   import/export, i18n, avatars) without an issue that changes the spec.
