@@ -5,65 +5,36 @@ allowed-tools: Read, Grep, Glob, Bash
 model: sonnet
 ---
 
-# How We Write Migrations
+# How we write migrations
 
-Make database changes predictable, safe, and boring.
+- Migrations are the riskiest change class: they touch production data and are hard to undo. Make them boring.
 
-## Workflow
+## Before writing
 
-1. Inspect
+- Check the current schema and the latest existing migration. Never edit a migration that has already been applied or merged; add a new one.
+- Decide whether the change is backward compatible with the code that is currently deployed. If not, split it using expand/contract (see below).
 
-- Identify the database engine, migration framework, and existing project conventions.
-- Inspect the current schema, migration history, and affected application code.
-- Check existing data, constraints, indexes, and dependencies.
-- Identify deployment and backward-compatibility requirements.
+## Rules
 
-2. Plan
+- One concern per migration. Do not mix schema changes with data backfills.
+- Expand, then contract. Ship in separate releases: (1) add the new column/table (nullable or with a default), (2) deploy code that writes/reads both, (3) backfill, (4) switch reads, (5) drop the old column in a later migration.
+- Always reversible. Write a working down/rollback. If a change is truly irreversible (dropping data), say so explicitly in the PR.
+- Avoid long locks. On large tables: create indexes concurrently/online, add columns without rewriting the table, add NOT NULL / foreign keys in a validated-later step.
+- Backfill in batches. Never update an entire large table in one statement. Make backfills idempotent and resumable.
+- No application code imports. Migrations must not depend on models or helpers that may change later; use raw SQL or frozen definitions.
+- Name clearly. Use a timestamp prefix plus a descriptive name, e.g. 20261020_add_status_to_orders.
 
-- Choose the smallest safe change.
-- Identify potential data loss, locking, performance, and deployment risks.
-- Determine whether rollback is genuinely possible.
-- Ask for clarification before making ambiguous decisions that could cause data loss.
+## Checklist before opening the PR
 
-3. Implement
+[ ] Runs cleanly on an empty database and on a production-like copy
+[ ] down tested
+[ ] Safe to deploy before the matching code (and after, if rolled back)
+[ ] Large-table impact considered (locks, duration, batch size)
+[ ] Rollback plan written in the PR description
 
-- Follow the project's existing migration framework and naming conventions.
-- Preserve existing data unless the requirements explicitly require otherwise.
-- Never modify migrations already applied to shared environments; create a new corrective migration instead.
-- Make data backfills restartable where practical and use batching for large datasets.
-- Consider database-specific transaction, locking, and index behavior.
-- For breaking schema changes, use expand–migrate–contract when old and new application versions must coexist.
+## PR description format
 
-4. Verify
-
-- Apply the migration against a representative test database.
-- Verify the resulting schema and expected data changes.
-- Run relevant tests and integrity checks.
-- Test rollback when supported and safe.
-- For large or high-risk changes, assess execution time, locks, resource usage, and recovery options.
-- Never claim a check passed unless it was actually performed.
-
-5. Handle Failures
-
-- Inspect the error, actual database state, and migration history before retrying.
-- Determine whether the migration partially applied and whether retrying is safe.
-- Prefer a minimal corrective migration or documented recovery procedure.
-- Never blindly rerun a failed migration or manipulate migration history to conceal a failure.
-
-## Safety Rules
-
-- Never execute destructive production operations without explicit authorization and an appropriate recovery plan.
-- Never assume a rollback restores data that has been discarded or overwritten.
-- Never disable integrity constraints merely to force a migration to succeed.
-- Avoid unnecessary abstractions, dependencies, and unrelated refactoring
-- State assumptions and unresolved risks explicitly.
-
-## Completion Report
-
-- Summarize only relevant items:
-- Changes: Migration and affected files.
-- Safety: Compatibility and data integrity risks.
-- Validation: Checks performed and actual results.
-- Deployment: Required ordering, backfills, or operational steps.
-- Recovery: Rollback limitations and unresolved risks.
-- Keep the report concise. Clearly distinguish completed work from recommended but unperformed actions.
+- What: one sentence
+- Why: context
+- Risk: tables affected, expected duration, lock behavior
+- Rollback: exact steps
