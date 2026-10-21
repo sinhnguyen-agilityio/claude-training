@@ -16,7 +16,7 @@
     "test:coverage": "vitest run --coverage",
     "e2e": "playwright test",
     "e2e:ui": "playwright test --ui",
-    "prepare": "husky"
+    "prepare": "cd .. && husky user-management/.husky"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",

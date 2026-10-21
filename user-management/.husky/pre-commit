@@ -1,0 +1,11 @@
+# Husky runs hooks from the repo root. Each project owns its checks and
+# runs only when it has staged files.
+staged=$(git diff --cached --name-only)
+
+if echo "$staged" | grep -q '^user-management/'; then
+  (cd user-management && pnpm exec lint-staged)
+fi
+
+if echo "$staged" | grep -q '^mcp/'; then
+  sh mcp/pre-commit.sh
+fi
