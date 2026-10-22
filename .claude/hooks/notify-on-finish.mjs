@@ -22,7 +22,7 @@ try {
   [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier($appId).Show($toast)
 } catch {}
 [System.Media.SystemSounds]::Asterisk.Play()
-Start-Sleep -Milliseconds 1500
+Start-Sleep -Milliseconds 800
 `
 
 const PS_ARGS = ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', PS_SCRIPT]
@@ -59,12 +59,14 @@ function main() {
   try {
     const child = spawn('powershell.exe', PS_ARGS, {
       env: { ...process.env, NOTIFY_TITLE: TITLE, NOTIFY_BODY: body },
-      detached: true,
+      // Not `detached`: a detached powershell.exe never starts here. It is also killed if this
+      // process exits first, so wait for it (a few seconds at most) instead of unref()-ing it.
       stdio: 'ignore',
       windowsHide: true,
     })
-    child.on('error', () => {})
-    child.unref()
+    child.on('error', () => process.exit(0))
+    child.on('exit', () => process.exit(0))
+    setTimeout(() => process.exit(0), 5000)
   } catch {
     // spawn failure must never affect Claude
   }
