@@ -1,4 +1,4 @@
-// Run: node .claude/hooks/block-forbidden.test.js
+// Run: node .claude/hooks/block-forbidden.test.mjs
 // Spawns the real hook against throwaway git repos and prints case / expected / actual exit codes.
 import { spawnSync } from 'node:child_process'
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-const hook = join(dirname(fileURLToPath(import.meta.url)), 'block-forbidden.js')
+const hook = join(dirname(fileURLToPath(import.meta.url)), 'block-forbidden.mjs')
 
 function git(cwd, ...args) {
   const res = spawnSync('git', args, { cwd, encoding: 'utf8' })
