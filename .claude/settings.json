@@ -10,6 +10,16 @@
           }
         ]
       }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"import(require('url').pathToFileURL(require('path').join(process.env.CLAUDE_PROJECT_DIR,'.claude','hooks','notify-on-finish.mjs')).href)\""
+          }
+        ]
+      }
     ]
   }
 }
