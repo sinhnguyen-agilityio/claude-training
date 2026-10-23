@@ -18,12 +18,15 @@ feature once.
 
 ## Setup
 
-From this `mcp` folder, with the existing virtualenv in `.env`:
+From this `mcp` folder, in a virtualenv in `.venv`:
 
 ```powershell
-.env\Scripts\Activate.ps1
-pip install mcp
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -r requirements.txt -r requirements-dev.txt
 ```
+
+`requirements-dev.txt` adds ruff, which the pre-commit hook needs (see [Development](#development)).
 
 This project uses **mcp 2.x** (`MCPServer`, not `FastMCP`). With mcp 1.x, change
 the server import to `from mcp.server.fastmcp import FastMCP` and

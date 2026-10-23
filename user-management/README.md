@@ -17,8 +17,8 @@ Prerequisites: **Node.js 22+** and **pnpm** (`corepack enable` installs the vers
 `package.json`).
 
 ```bash
-git clone git@gitlab.asoft-python.com:sinh.nguyen/claude.git
-cd claude
+git clone https://github.com/sinhnguyen-agilityio/claude-training.git claude
+cd claude/user-management
 pnpm install
 pnpm dev
 ```
@@ -59,12 +59,9 @@ src/
   test/             # Test setup and helpers
 tests/e2e/          # Playwright specs
 docs/               # Spec and decisions
-.gitlab/            # Issue templates (Feature, Bug)
 ```
 
 ## Workflow
 
-1. Every piece of work starts as a GitLab issue (use the **Feature** or **Bug** template).
-2. Branch from `main`: `feat/<issue>-<slug>` or `fix/<issue>-<slug>`.
-3. Open a merge request that references the issue (`Closes #<n>`). Run `pnpm lint`, `pnpm typecheck`, `pnpm test:coverage` and `pnpm e2e` before asking for review.
-4. Bug fixes start with a failing test that reproduces the bug.
+The team workflow (issue, branch naming, commit prefixes, pull request, pre-review checks,
+test-first bug fixes) is in [WORKFLOW.md](../WORKFLOW.md).

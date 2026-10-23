@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/block-forbidden.mjs\""
+            "command": "node -e \"Promise.resolve().then(()=>import(require('url').pathToFileURL(require('path').join(process.env.CLAUDE_PROJECT_DIR,process.argv[1])).href)).catch(e=>{console.error('Hook error ('+process.argv[1]+'): '+e.message);process.exit(+process.argv[2])})\" .claude/hooks/block-forbidden.mjs 2"
           }
         ]
       }
@@ -16,7 +16,18 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node -e \"import(require('url').pathToFileURL(require('path').join(process.env.CLAUDE_PROJECT_DIR,'.claude','hooks','notify-on-finish.mjs')).href)\""
+            "command": "node -e \"Promise.resolve().then(()=>import(require('url').pathToFileURL(require('path').join(process.env.CLAUDE_PROJECT_DIR,process.argv[1])).href)).catch(e=>{console.error('Hook error ('+process.argv[1]+'): '+e.message);process.exit(+process.argv[2])})\" .claude/hooks/notify-on-finish.mjs 1"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|MultiEdit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"Promise.resolve().then(()=>import(require('url').pathToFileURL(require('path').join(process.env.CLAUDE_PROJECT_DIR,process.argv[1])).href)).catch(e=>{console.error('Hook error ('+process.argv[1]+'): '+e.message);process.exit(+process.argv[2])})\" .claude/hooks/prettier-user-management.mjs 1"
           }
         ]
       }
