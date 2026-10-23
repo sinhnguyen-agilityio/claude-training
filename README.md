@@ -9,11 +9,11 @@ used while working on them.
 | [user-management/](user-management/) | Main project: a React + TypeScript CRUD app for managing users         |
 | [mcp/](mcp/)                         | Side project: a minimal Model Context Protocol (MCP) server and client |
 | [.claude/](.claude/)                 | Shared Claude Code settings, hooks and skills for the whole repository |
-| [.gitlab/](.gitlab/)                 | Issue templates (Feature, Bug)                                         |
+| [.github/](.github/)                 | CI workflow and issue templates (Feature, Bug)                         |
 
 ## Training goals
 
-- Work the way a team would: GitLab issue → branch → merge request → review.
+- Work the way a team would: GitHub issue → branch → pull request → review.
 - Drive a feature from a written spec ([user-management/docs/SPEC.md](user-management/docs/SPEC.md))
   with clear acceptance criteria.
 - Write tests first for bugs, and keep unit, component and E2E coverage healthy (80% threshold).
@@ -29,14 +29,11 @@ Prerequisites: **Node.js 22+** and **pnpm**. Run `corepack enable` to install th
 version (on Node 25+, which no longer bundles Corepack, run `npm i -g corepack` first).
 
 ```bash
-git clone git@gitlab.asoft-python.com:sinh.nguyen/claude.git claude
+git clone https://github.com/sinhnguyen-agilityio/claude-training.git claude
 cd claude/user-management
 pnpm install   # also installs the Husky pre-commit hook for the whole repo
 pnpm dev
 ```
-
-No access to the private GitLab host? Clone the GitHub mirror instead, into the same folder name:
-`git clone https://github.com/sinhnguyen-agilityio/claude-training.git claude`.
 
 Open <http://localhost:5173>. There is no backend: a mock REST API (MSW) runs in the browser and
 stores data in `localStorage`. See [user-management/README.md](user-management/README.md) for the
@@ -94,6 +91,7 @@ Defined in [.claude/skills/](.claude/skills/):
 | -------------------------------------------------------------------------- | -------------------------------------------------------- |
 | [how-we-write-migrations](.claude/skills/how-we-write-migrations/SKILL.md) | Create and review safe database migrations               |
 | [release-checklist](.claude/skills/release-checklist/SKILL.md)             | Run a final check before shipping (`/release-checklist`) |
+| [review-checklist](.claude/skills/review-checklist/SKILL.md)               | Review a PR or branch (`/review-checklist 2`)            |
 
 ### Hook tests
 
@@ -106,7 +104,7 @@ node --test .claude/hooks/*.test.mjs
 
 ## Workflow
 
-Issue, branch naming, commit prefixes, merge request, pre-review checks and test-first bug fixes
+Issue, branch naming, commit prefixes, pull request, pre-review checks and test-first bug fixes
 are defined in [WORKFLOW.md](WORKFLOW.md), together with the Husky pre-commit hook that runs the
 checks.
 
@@ -115,8 +113,8 @@ checks.
 ```text
 .
 ├── .claude/          # Claude Code settings, hooks and skills
-├── .gitlab/          # Issue templates
-├── WORKFLOW.md       # Team workflow: issue, branch, commit, MR, checks
+├── .github/          # CI workflow and issue templates
+├── WORKFLOW.md       # Team workflow: issue, branch, commit, PR, checks
 ├── mcp/              # MCP server + client demo (Python)
 └── user-management/  # User Management Dashboard (React + TypeScript)
     ├── docs/         # SPEC.md: data model, API contract, acceptance criteria

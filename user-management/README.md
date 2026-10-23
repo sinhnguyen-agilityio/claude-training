@@ -17,8 +17,8 @@ Prerequisites: **Node.js 22+** and **pnpm** (`corepack enable` installs the vers
 `package.json`).
 
 ```bash
-git clone git@gitlab.asoft-python.com:sinh.nguyen/claude.git
-cd claude
+git clone https://github.com/sinhnguyen-agilityio/claude-training.git claude
+cd claude/user-management
 pnpm install
 pnpm dev
 ```
@@ -59,10 +59,9 @@ src/
   test/             # Test setup and helpers
 tests/e2e/          # Playwright specs
 docs/               # Spec and decisions
-.gitlab/            # Issue templates (Feature, Bug)
 ```
 
 ## Workflow
 
-The team workflow (issue, branch naming, commit prefixes, merge request, pre-review checks,
+The team workflow (issue, branch naming, commit prefixes, pull request, pre-review checks,
 test-first bug fixes) is in [WORKFLOW.md](../WORKFLOW.md).

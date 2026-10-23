@@ -103,7 +103,7 @@ Request flow: page → `features/users/api/hooks.ts` (TanStack Query) → `api/c
 ## Never do
 
 - Never create a branch, commit or push without asking first, and never commit to `main`
-  directly. All changes reach `main` through a merge request.
+  directly. All changes reach `main` through a pull request.
 - Never skip the pre-commit hook (`--no-verify`), and never lower the 80% coverage threshold to
   get a run passing.
 - Never change validation rules on only one side. Edit `schema.ts` / `query.ts`, which both the
