@@ -25,14 +25,18 @@ used while working on them.
 
 ### User Management Dashboard
 
-Prerequisites: **Node.js 22+** and **pnpm** (`corepack enable` installs the pinned version).
+Prerequisites: **Node.js 22+** and **pnpm**. Run `corepack enable` to install the pinned pnpm
+version (on Node 25+, which no longer bundles Corepack, run `npm i -g corepack` first).
 
 ```bash
-git clone git@gitlab.asoft-python.com:sinh.nguyen/claude.git
+git clone git@gitlab.asoft-python.com:sinh.nguyen/claude.git claude
 cd claude/user-management
-pnpm install
+pnpm install   # also installs the Husky pre-commit hook for the whole repo
 pnpm dev
 ```
+
+No access to the private GitLab host? Clone the GitHub mirror instead, into the same folder name:
+`git clone https://github.com/sinhnguyen-agilityio/claude-training.git claude`.
 
 Open <http://localhost:5173>. There is no backend: a mock REST API (MSW) runs in the browser and
 stores data in `localStorage`. See [user-management/README.md](user-management/README.md) for the
@@ -40,11 +44,15 @@ scripts, project structure and workflow.
 
 ### MCP demo
 
-Prerequisites: **Python 3.10+**.
+Prerequisites: **Python 3.10+** (required by `mcp` 2.x). Use a virtualenv so the dependencies stay out
+of your global Python.
 
-```powershell
-cd mcp
-pip install -r requirements.txt
+```bash
+cd mcp                       # from the repository root
+python -m venv .venv         # skip if .venv already exists
+source .venv/bin/activate    # Git Bash on Windows: source .venv/Scripts/activate
+                             # PowerShell: .venv\Scripts\Activate.ps1
+pip install -r requirements.txt -r requirements-dev.txt   # dev file adds ruff, used by the pre-commit hook
 python client.py
 ```
 
@@ -53,24 +61,30 @@ for details.
 
 ## Working with Claude Code
 
-Run `claude` from the repository root. It picks up the following configuration automatically.
+Run `claude` from the repository root. It picks up the configuration below automatically. The
+hooks also load when you start it inside `user-management/` (see [Hooks](#hooks)); the skills are
+only registered at the root.
 
 ### Project instructions
 
 - [user-management/CLAUDE.md](user-management/CLAUDE.md): commands, architecture, testing rules and
-  the "never do" list for the app.
+  the "never do" list for the app. Claude loads it when working under `user-management/`. There is
+  no instruction file for `mcp/`; see [mcp/README.md](mcp/README.md).
 
 ### Hooks
 
 Configured in [.claude/settings.json](.claude/settings.json), with scripts in [.claude/hooks/](.claude/hooks/):
 
-| Hook                                                       | Event        | What it does                                                                                               |
-| ---------------------------------------------------------- | ------------ | ---------------------------------------------------------------------------------------------------------- |
-| [block-forbidden.mjs](.claude/hooks/block-forbidden.mjs)   | `PreToolUse` | Blocks risky git commands run through Bash/PowerShell (force push, hard reset, work on protected branches) |
-| [notify-on-finish.mjs](.claude/hooks/notify-on-finish.mjs) | `Stop`       | Shows a Windows toast and plays a sound when Claude finishes a turn                                        |
+| Hook                                                                       | Event         | What it does                                                                                               |
+| -------------------------------------------------------------------------- | ------------- | ---------------------------------------------------------------------------------------------------------- |
+| [block-forbidden.mjs](.claude/hooks/block-forbidden.mjs)                   | `PreToolUse`  | Blocks risky git commands run through Bash/PowerShell (force push, hard reset, work on protected branches) |
+| [notify-on-finish.mjs](.claude/hooks/notify-on-finish.mjs)                 | `Stop`        | Shows a Windows toast and plays a sound when Claude finishes a turn                                        |
+| [prettier-user-management.mjs](.claude/hooks/prettier-user-management.mjs) | `PostToolUse` | Runs Prettier on files Claude edits or writes under `user-management/`                                     |
 
-`user-management/.claude/settings.json` adds a `PostToolUse` hook that runs Prettier on every file
-Claude edits or writes.
+[user-management/.claude/settings.json](user-management/.claude/settings.json) registers the same
+three hooks for sessions started in `user-management/`; `settings.test.mjs` keeps the two files in
+step. If the guard script cannot be loaded, the `PreToolUse` hook blocks the command (fails closed);
+the other two only report an error.
 
 ### Skills
 
@@ -83,7 +97,8 @@ Defined in [.claude/skills/](.claude/skills/):
 
 ### Hook tests
 
-Run the hook tests with Node's built-in runner:
+Run the hook tests with Node's built-in runner. The Prettier hook tests need `pnpm install` in
+`user-management/` first:
 
 ```bash
 node --test .claude/hooks/*.test.mjs
@@ -91,16 +106,9 @@ node --test .claude/hooks/*.test.mjs
 
 ## Workflow
 
-1. Start every piece of work from a GitLab issue, using the **Feature** or **Bug** template.
-2. Branch from `main`: `feat/<issue>-<slug>` or `fix/<issue>-<slug>`. Never commit to `main` directly.
-3. Use conventional commit prefixes (`feat:`, `fix:`, `test:`, `chore:`, `docs:`).
-4. Open a merge request that references the issue (`Closes #<n>`).
-5. Before asking for review, run `pnpm lint`, `pnpm typecheck`, `pnpm test:coverage` and `pnpm e2e`
-   in `user-management/`.
-6. A bug fix starts with a failing test that reproduces the bug.
-
-A Husky pre-commit hook (`user-management/.husky/pre-commit`) lints and formats staged files, and
-runs the ruff checks when files under `mcp/` are staged. Don't skip it with `--no-verify`.
+Issue, branch naming, commit prefixes, merge request, pre-review checks and test-first bug fixes
+are defined in [WORKFLOW.md](WORKFLOW.md), together with the Husky pre-commit hook that runs the
+checks.
 
 ## Repository layout
 
@@ -108,6 +116,7 @@ runs the ruff checks when files under `mcp/` are staged. Don't skip it with `--n
 .
 ├── .claude/          # Claude Code settings, hooks and skills
 ├── .gitlab/          # Issue templates
+├── WORKFLOW.md       # Team workflow: issue, branch, commit, MR, checks
 ├── mcp/              # MCP server + client demo (Python)
 └── user-management/  # User Management Dashboard (React + TypeScript)
     ├── docs/         # SPEC.md: data model, API contract, acceptance criteria

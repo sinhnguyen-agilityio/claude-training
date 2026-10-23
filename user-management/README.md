@@ -64,7 +64,5 @@ docs/               # Spec and decisions
 
 ## Workflow
 
-1. Every piece of work starts as a GitLab issue (use the **Feature** or **Bug** template).
-2. Branch from `main`: `feat/<issue>-<slug>` or `fix/<issue>-<slug>`.
-3. Open a merge request that references the issue (`Closes #<n>`). Run `pnpm lint`, `pnpm typecheck`, `pnpm test:coverage` and `pnpm e2e` before asking for review.
-4. Bug fixes start with a failing test that reproduces the bug.
+The team workflow (issue, branch naming, commit prefixes, merge request, pre-review checks,
+test-first bug fixes) is in [WORKFLOW.md](../WORKFLOW.md).
