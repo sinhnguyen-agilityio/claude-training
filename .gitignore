@@ -29,6 +29,9 @@ playwright-report
 test-results
 blob-report
 
+# Playwright MCP snapshots and logs
+.playwright-mcp/
+
 # Python
 __pycache__/
 *.py[cod]
