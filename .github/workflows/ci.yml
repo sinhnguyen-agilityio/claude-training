@@ -16,6 +16,8 @@ permissions:
 jobs:
   user-management:
     runs-on: ubuntu-latest
+    # A hung step otherwise runs until GitHub's 6 h limit.
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: user-management
@@ -34,7 +36,12 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test:coverage
       - run: pnpm exec playwright install --with-deps chromium
+      # The 35 tests take about 30 s. Once they finished but Playwright never exited (run 39944427327),
+      # so this step is capped, and DEBUG logs how the preview server is shut down if it happens again.
       - run: pnpm e2e
+        timeout-minutes: 8
+        env:
+          DEBUG: pw:webserver
       - if: failure()
         uses: actions/upload-artifact@v4
         with:
@@ -44,6 +51,7 @@ jobs:
 
   mcp:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: mcp
@@ -58,6 +66,7 @@ jobs:
 
   claude-hooks:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v4
