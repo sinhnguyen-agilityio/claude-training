@@ -31,17 +31,14 @@ pnpm exec playwright test tests/e2e/delete-user.spec.ts
 pnpm exec playwright install chromium   # once, before the first E2E run
 ```
 
-A Husky pre-commit hook runs lint-staged (oxlint + Prettier on staged files). Before asking for a
-review, run `pnpm lint`, `pnpm typecheck`, `pnpm test:coverage` and `pnpm e2e`.
+A Husky pre-commit hook runs lint-staged (oxlint + Prettier on staged files). The pre-review checks
+are in the Workflow section below.
 
 ## Workflow
 
-- Work starts from a GitLab issue (`.gitlab/issue_templates/`: Feature, Bug).
-- Branch from `main`: `feat/<issue>-<slug>` or `fix/<issue>-<slug>`. The MR references the issue
-  with `Closes #<n>`.
-- Bug fixes start with a failing test that reproduces the bug.
-- Commit messages use conventional prefixes (`feat:`, `fix:`, `test:`, `chore:`), tagged with the
-  SPEC feature where relevant, e.g. `feat: add edit user page ... (F4)`.
+The team workflow is shared by every project in the repository:
+
+@../WORKFLOW.md
 
 ## Architecture
 
@@ -106,7 +103,7 @@ Request flow: page → `features/users/api/hooks.ts` (TanStack Query) → `api/c
 ## Never do
 
 - Never create a branch, commit or push without asking first, and never commit to `main`
-  directly. All changes reach `main` through a merge request.
+  directly. All changes reach `main` through a pull request.
 - Never skip the pre-commit hook (`--no-verify`), and never lower the 80% coverage threshold to
   get a run passing.
 - Never change validation rules on only one side. Edit `schema.ts` / `query.ts`, which both the

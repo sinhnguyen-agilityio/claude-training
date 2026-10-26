@@ -1,0 +1,83 @@
+# Runs the same checks as WORKFLOW.md step 5, one job per project.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  user-management:
+    runs-on: ubuntu-latest
+    # A hung step otherwise runs until GitHub's 6 h limit.
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: user-management
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: user-management/package.json
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: user-management/.nvmrc
+          cache: pnpm
+          cache-dependency-path: user-management/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test:coverage
+      - run: pnpm exec playwright install --with-deps chromium
+      # The 35 tests take about 30 s. Once they finished but Playwright never exited (run 39944427327),
+      # so this step is capped, and DEBUG logs how the preview server is shut down if it happens again.
+      - run: pnpm e2e
+        timeout-minutes: 8
+        env:
+          DEBUG: pw:webserver
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results
+          path: user-management/test-results/
+          if-no-files-found: ignore
+
+  mcp:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: mcp
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+      - run: python -m pip install -r requirements-dev.txt
+      - run: python -m ruff check .
+      - run: python -m ruff format --check .
+
+  claude-hooks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: user-management/package.json
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: user-management/.nvmrc
+          cache: pnpm
+          cache-dependency-path: user-management/pnpm-lock.yaml
+      # The Prettier hook tests load Prettier from user-management/node_modules.
+      - run: pnpm install --frozen-lockfile
+        working-directory: user-management
+      - run: node --test .claude/hooks/*.test.mjs

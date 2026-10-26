@@ -14,7 +14,9 @@ export default defineConfig({
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   // E2E runs against the production build, the same artifact users get.
   webServer: {
-    command: `pnpm build && pnpm preview --port ${PORT} --strictPort`,
+    // Vite is started directly, not through `pnpm preview`: on Linux (CI) the pnpm wrapper outlived
+    // Playwright's shutdown and `pnpm e2e` never exited after the tests passed.
+    command: `pnpm build && node node_modules/vite/bin/vite.js preview --port ${PORT} --strictPort`,
     url: `http://localhost:${PORT}`,
     reuseExistingServer: true,
     timeout: 120_000,

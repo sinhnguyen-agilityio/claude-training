@@ -1,12 +1,33 @@
 {
   "hooks": {
-    "PostToolUse": [
+    "PreToolUse": [
       {
-        "matcher": "Edit|Write",
+        "matcher": "Bash|PowerShell",
         "hooks": [
           {
             "type": "command",
-            "command": "node -e \"let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{const f=JSON.parse(d).tool_input.file_path;require('child_process').spawnSync('npx',['prettier','--write',f],{stdio:'inherit',shell:true})})\""
+            "command": "node -e \"Promise.resolve().then(()=>import(require('url').pathToFileURL(require('path').join(process.env.CLAUDE_PROJECT_DIR,process.argv[1])).href)).catch(e=>{console.error('Hook error ('+process.argv[1]+'): '+e.message);process.exit(+process.argv[2])})\" ../.claude/hooks/block-forbidden.mjs 2"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"Promise.resolve().then(()=>import(require('url').pathToFileURL(require('path').join(process.env.CLAUDE_PROJECT_DIR,process.argv[1])).href)).catch(e=>{console.error('Hook error ('+process.argv[1]+'): '+e.message);process.exit(+process.argv[2])})\" ../.claude/hooks/notify-on-finish.mjs 1"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|MultiEdit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"Promise.resolve().then(()=>import(require('url').pathToFileURL(require('path').join(process.env.CLAUDE_PROJECT_DIR,process.argv[1])).href)).catch(e=>{console.error('Hook error ('+process.argv[1]+'): '+e.message);process.exit(+process.argv[2])})\" ../.claude/hooks/prettier-user-management.mjs 1"
           }
         ]
       }
