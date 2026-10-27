@@ -59,6 +59,28 @@ export function useDeleteUser() {
   })
 }
 
+/** Deletes or re-statuses several users at once (SPEC F7). Partial failures resolve normally. */
+export function useBulkUsers() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: usersApi.bulk,
+    onSuccess: async (result, request) => {
+      if (request.action === 'setStatus') {
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: userKeys.lists() }),
+          queryClient.invalidateQueries({ queryKey: userKeys.details() }),
+        ])
+        return
+      }
+      await queryClient.invalidateQueries({ queryKey: userKeys.lists() })
+      // Removed last, so an open detail page does not refetch a deleted user.
+      for (const id of result.succeeded) {
+        queryClient.removeQueries({ queryKey: userKeys.detail(id) })
+      }
+    },
+  })
+}
+
 /**
  * Restores the seed data. Cached users are dropped without refetching (an open detail page may
  * show a user that no longer exists), and lists are reset and refetched.
