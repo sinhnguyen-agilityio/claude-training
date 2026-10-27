@@ -8,15 +8,21 @@ import { fileURLToPath } from 'node:url'
 
 const hook = join(dirname(fileURLToPath(import.meta.url)), 'block-forbidden.mjs')
 
+// Inside a git hook (the husky pre-commit) git exports GIT_INDEX_FILE and friends, which would
+// point the throwaway repos below at the real one. Drop them from every child process.
+const env = Object.fromEntries(
+  Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_')),
+)
+
 function git(cwd, ...args) {
-  const res = spawnSync('git', args, { cwd, encoding: 'utf8' })
+  const res = spawnSync('git', args, { cwd, env, encoding: 'utf8' })
   if (res.status !== 0) throw new Error(`git ${args.join(' ')} failed: ${res.stderr}`)
 }
 
 const root = mkdtempSync(join(tmpdir(), 'block-forbidden-'))
 function makeRepo(name, setup) {
   const dir = join(root, name)
-  spawnSync('git', ['init', '-q', '-b', 'main', dir])
+  spawnSync('git', ['init', '-q', '-b', 'main', dir], { env })
   git(dir, 'config', 'user.email', 't@example.com')
   git(dir, 'config', 'user.name', 'test')
   git(dir, 'commit', '-q', '--allow-empty', '-m', 'init')
@@ -33,9 +39,21 @@ const dirs = {
 }
 mkdirSync(dirs.norepo)
 
+// A linked worktree of the `main` repo, on its own feature branch. Claude Code sets
+// CLAUDE_PROJECT_DIR to the main checkout while the command runs in the worktree.
+dirs.worktree = join(root, 'worktree')
+git(dirs.main, 'worktree', 'add', '-q', '-b', 'feat/wt', dirs.worktree)
+mkdirSync(join(dirs.worktree, 'sub'))
+// Forward slashes keep the paths intact when they are written into a command line.
+const slash = (path) => path.replaceAll('\\', '/')
+const mainPath = slash(dirs.main)
+const worktreePath = slash(dirs.worktree)
+
 const BLOCK = 2
 const ALLOW = 0
 const cmd = (command) => JSON.stringify({ tool_input: { command } })
+// Like `cmd`, but the tool call also reports the directory the command runs in.
+const cmdIn = (command, cwd) => JSON.stringify({ cwd, tool_input: { command } })
 
 // [case name, stdin, project dir key, expected exit code]
 const cases = [
@@ -81,6 +99,163 @@ const cases = [
   ['bare push on master', cmd('git push'), 'master', BLOCK],
   ['bare push on feature', cmd('git push'), 'feat', ALLOW],
   ['push feature branch', cmd('git push -u origin feat/x'), 'main', ALLOW],
+  // Linked worktree: the branch is read where the command runs, not in CLAUDE_PROJECT_DIR
+  [
+    'worktree: commit on its feature branch',
+    cmdIn('git commit -m "x"', dirs.worktree),
+    'main',
+    ALLOW,
+  ],
+  [
+    'worktree: commit from a subdirectory',
+    cmdIn('git commit -m "x"', join(dirs.worktree, 'sub')),
+    'main',
+    ALLOW,
+  ],
+  ['worktree: bare push on its feature branch', cmdIn('git push', dirs.worktree), 'main', ALLOW],
+  ['worktree: push origin main', cmdIn('git push origin main', dirs.worktree), 'main', BLOCK],
+  ['commit on main when cwd is main', cmdIn('git commit -m "x"', dirs.main), 'feat', BLOCK],
+  ['bare push on main when cwd is main', cmdIn('git push', dirs.main), 'feat', BLOCK],
+  [
+    'cd into main, then commit',
+    cmdIn(`cd ${mainPath} && git commit -m "x"`, dirs.worktree),
+    'main',
+    BLOCK,
+  ],
+  [
+    'cd into a subdirectory, then commit',
+    cmdIn('cd sub && git commit -m "x"', dirs.worktree),
+    'main',
+    ALLOW,
+  ],
+  [
+    'cd into the worktree, then commit',
+    cmdIn(`cd ${worktreePath} && git commit -m "x"`, dirs.main),
+    'main',
+    ALLOW,
+  ],
+  [
+    'cd to an unknown place, then commit',
+    cmdIn('cd $SOMEWHERE && git commit -m "x"', dirs.worktree),
+    'main',
+    BLOCK,
+  ],
+  ['-C main, commit', cmdIn(`git -C ${mainPath} commit -m "x"`, dirs.worktree), 'main', BLOCK],
+  ['-C worktree, commit', cmdIn(`git -C ${worktreePath} commit -m "x"`, dirs.main), 'main', ALLOW],
+  ['cwd is not a repo: commit', cmdIn('git commit -m "x"', dirs.norepo), 'feat', BLOCK],
+  ['worktree: force push still blocked', cmdIn('git push --force', dirs.worktree), 'main', BLOCK],
+  // A directory change that may not happen, or that is not tracked, leaves the branch unknown
+  ...[
+    ['cd then ;', `cd ${worktreePath}; git commit -m "x"`],
+    ['cd then ||', `cd ${worktreePath} || git commit -m "x"`],
+    ['cd then |', `cd ${worktreePath} | git commit -m "x"`],
+    ['cd behind ||', `false || cd ${worktreePath} && git commit -m "x"`],
+    ['cd with extra arguments', `cd ${worktreePath} extra && git commit -m "x"`],
+    ['env -C', `env -C ${worktreePath} git commit -m "x"`],
+  ].map(([name, command]) => [`unknown dir: ${name}`, cmdIn(command, dirs.main), 'main', BLOCK]),
+  // Run from the worktree, where reading the working directory alone would say "feature branch"
+  ...[
+    ['popd', 'popd && git commit -m "x"'],
+    ['Pop-Location', 'Pop-Location && git commit -m "x"'],
+    ['builtin cd', `builtin cd ${mainPath} && git commit -m "x"`],
+    ['subshell', `(cd ${mainPath} && git commit -m "x")`],
+    ['group', `{ cd ${mainPath} && git commit -m "x"; }`],
+  ].map(([name, command]) => [
+    `unknown dir: ${name}`,
+    cmdIn(command, dirs.worktree),
+    'main',
+    BLOCK,
+  ]),
+  [
+    'Push-Location into main, then commit',
+    cmdIn(`Push-Location ${mainPath} && git commit -m "x"`, dirs.worktree),
+    'main',
+    BLOCK,
+  ],
+  // Pointing git at another repository leaves the branch unknown, however it is spelled
+  ...[
+    ['--git-dir=', `git --git-dir=${mainPath}/.git --work-tree=${mainPath} commit -m "x"`],
+    ['--git-dir value', `git --git-dir ${mainPath}/.git commit -m "x"`],
+    ['--work-tree', `git --work-tree ${mainPath} commit -m "x"`],
+    ['GIT_DIR=', `GIT_DIR=${mainPath}/.git git commit -m "x"`],
+    ['GIT_WORK_TREE=', `GIT_WORK_TREE=${mainPath} git commit -m "x"`],
+    ['env GIT_DIR=', `env GIT_DIR=${mainPath}/.git git commit -m "x"`],
+    ['bare push with --git-dir', `git --git-dir=${mainPath}/.git push`],
+  ].map(([name, command]) => [
+    `redirected git: ${name}`,
+    cmdIn(command, dirs.worktree),
+    'main',
+    BLOCK,
+  ]),
+  [
+    '--git-dir on a command that ignores the branch',
+    cmdIn(`git --git-dir=${mainPath}/.git status`, dirs.worktree),
+    'main',
+    ALLOW,
+  ],
+  [
+    'plain env assignment before commit',
+    cmdIn('FOO=1 git commit -m "x"', dirs.worktree),
+    'main',
+    ALLOW,
+  ],
+  ['env wrapper still gets the destructive rules', cmd('env git push --force'), 'feat', BLOCK],
+  // Commands on separate lines
+  ['second line commits on main', cmdIn('git add .\ngit commit -m "x"', dirs.main), 'feat', BLOCK],
+  [
+    'second line commits on a feature branch',
+    cmdIn('git add .\ngit commit -m "x"', dirs.worktree),
+    'main',
+    ALLOW,
+  ],
+  [
+    'multi-line message whose first line ends in )',
+    cmdIn('git commit -m "feat: x (F7)\n\nCloses #4"', dirs.worktree),
+    'main',
+    ALLOW,
+  ],
+  // A line continuation joins the lines, so the subcommand must not be lost in the split
+  ['continuation: commit on main', cmdIn('git \\\ncommit -m "x"', dirs.main), 'feat', BLOCK],
+  ['continuation: CRLF', cmdIn('git \\\r\ncommit -m "x"', dirs.main), 'feat', BLOCK],
+  ['continuation: PowerShell backtick', cmdIn('git `\ncommit -m "x"', dirs.main), 'feat', BLOCK],
+  [
+    'continuation: commit on a feature branch',
+    cmdIn('git \\\ncommit -m "x"', dirs.worktree),
+    'main',
+    ALLOW,
+  ],
+  ['continuation: force push', cmdIn('git push \\\n  --force', dirs.worktree), 'main', BLOCK],
+  // A GIT_DIR-style variable set in any segment makes the branch unknown for later git commands
+  ...[
+    ['export GIT_DIR', `export GIT_DIR=${mainPath}/.git && git commit -m "x"`],
+    ['export GIT_WORK_TREE', `export GIT_WORK_TREE=${mainPath}; git commit -m "x"`],
+    ['PowerShell $env:GIT_DIR', `$env:GIT_DIR='${mainPath}/.git'; git commit -m "x"`],
+    ['set GIT_DIR', `set GIT_DIR=${mainPath}/.git && git commit -m "x"`],
+    ['declare -x GIT_COMMON_DIR', `declare -x GIT_COMMON_DIR=${mainPath}/.git; git push`],
+  ].map(([name, command]) => [
+    `env redirect: ${name}`,
+    cmdIn(command, dirs.worktree),
+    'main',
+    BLOCK,
+  ]),
+  [
+    'env redirect: setx',
+    cmdIn(`setx GIT_DIR ${mainPath}/.git && git commit -m "x"`, dirs.worktree),
+    'main',
+    BLOCK,
+  ],
+  [
+    'env redirect: export without a value',
+    cmdIn('export GIT_WORK_TREE; git commit -m "x"', dirs.worktree),
+    'main',
+    BLOCK,
+  ],
+  [
+    'a commit message that only names the variables',
+    cmdIn('git commit -m "docs: explain GIT_DIR and GIT_WORK_TREE handling"', dirs.worktree),
+    'main',
+    ALLOW,
+  ],
   // Chaining + git.exe
   ['chain &&', cmd('cd src && git push --force'), 'feat', BLOCK],
   ['chain ;', cmd('cd src; git reset --hard'), 'feat', BLOCK],
@@ -112,7 +287,7 @@ const rows = cases.map(([name, input, dirKey, expected]) => {
   const res = spawnSync(process.execPath, [hook], {
     input,
     encoding: 'utf8',
-    env: { ...process.env, CLAUDE_PROJECT_DIR: dirs[dirKey] },
+    env: { ...env, CLAUDE_PROJECT_DIR: dirs[dirKey] },
   })
   const ok = res.status === expected
   return {
