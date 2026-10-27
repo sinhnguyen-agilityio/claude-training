@@ -20,3 +20,8 @@ A Husky pre-commit hook (`user-management/.husky/pre-commit`) runs the checks fo
 has staged files: lint-staged for `user-management/`, ruff for `mcp/`, and the hook tests for
 `.claude/`. It is installed by `pnpm install` in `user-management/`, so run that once even if you
 only work in `mcp/`. Don't skip it with `--no-verify`.
+
+The same Husky setup enforces rule 2: the pre-commit hook refuses a commit while `main` or `master`
+is checked out, and `user-management/.husky/pre-push` refuses a push whose target is `main` or
+`master`. Git runs them in the checkout or worktree you are working in, so a feature branch (or a
+worktree on one) is never blocked.

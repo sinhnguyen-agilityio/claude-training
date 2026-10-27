@@ -1,3 +1,14 @@
+# Never commit directly on a protected branch. Git runs this hook in the checkout or worktree that
+# is being committed to, so it sees the real branch however the command was written. A detached
+# HEAD (rebase, cherry-pick) is allowed.
+branch=$(git symbolic-ref --short -q HEAD)
+case "$branch" in
+  main | master)
+    echo "Cannot commit directly on protected branch \"$branch\". Create a feature branch first." >&2
+    exit 1
+    ;;
+esac
+
 # Husky runs hooks from the repo root. Each project owns its checks and
 # runs only when it has staged files.
 staged=$(git diff --cached --name-only)
