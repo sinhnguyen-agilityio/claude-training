@@ -8,15 +8,21 @@ import { fileURLToPath } from 'node:url'
 
 const hook = join(dirname(fileURLToPath(import.meta.url)), 'block-forbidden.mjs')
 
+// Inside a git hook (the husky pre-commit) git exports GIT_INDEX_FILE and friends, which would
+// point the throwaway repos below at the real one. Drop them from every child process.
+const env = Object.fromEntries(
+  Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_')),
+)
+
 function git(cwd, ...args) {
-  const res = spawnSync('git', args, { cwd, encoding: 'utf8' })
+  const res = spawnSync('git', args, { cwd, env, encoding: 'utf8' })
   if (res.status !== 0) throw new Error(`git ${args.join(' ')} failed: ${res.stderr}`)
 }
 
 const root = mkdtempSync(join(tmpdir(), 'block-forbidden-'))
 function makeRepo(name, setup) {
   const dir = join(root, name)
-  spawnSync('git', ['init', '-q', '-b', 'main', dir])
+  spawnSync('git', ['init', '-q', '-b', 'main', dir], { env })
   git(dir, 'config', 'user.email', 't@example.com')
   git(dir, 'config', 'user.name', 'test')
   git(dir, 'commit', '-q', '--allow-empty', '-m', 'init')
@@ -33,9 +39,21 @@ const dirs = {
 }
 mkdirSync(dirs.norepo)
 
+// A linked worktree of the `main` repo, on its own feature branch. Claude Code sets
+// CLAUDE_PROJECT_DIR to the main checkout while the command runs in the worktree.
+dirs.worktree = join(root, 'worktree')
+git(dirs.main, 'worktree', 'add', '-q', '-b', 'feat/wt', dirs.worktree)
+mkdirSync(join(dirs.worktree, 'sub'))
+// Forward slashes keep the paths intact when they are written into a command line.
+const slash = (path) => path.replaceAll('\\', '/')
+const mainPath = slash(dirs.main)
+const worktreePath = slash(dirs.worktree)
+
 const BLOCK = 2
 const ALLOW = 0
 const cmd = (command) => JSON.stringify({ tool_input: { command } })
+// Like `cmd`, but the tool call also reports the directory the command runs in.
+const cmdIn = (command, cwd) => JSON.stringify({ cwd, tool_input: { command } })
 
 // [case name, stdin, project dir key, expected exit code]
 const cases = [
@@ -81,6 +99,51 @@ const cases = [
   ['bare push on master', cmd('git push'), 'master', BLOCK],
   ['bare push on feature', cmd('git push'), 'feat', ALLOW],
   ['push feature branch', cmd('git push -u origin feat/x'), 'main', ALLOW],
+  // Linked worktree: the branch is read where the command runs, not in CLAUDE_PROJECT_DIR
+  [
+    'worktree: commit on its feature branch',
+    cmdIn('git commit -m "x"', dirs.worktree),
+    'main',
+    ALLOW,
+  ],
+  [
+    'worktree: commit from a subdirectory',
+    cmdIn('git commit -m "x"', join(dirs.worktree, 'sub')),
+    'main',
+    ALLOW,
+  ],
+  ['worktree: bare push on its feature branch', cmdIn('git push', dirs.worktree), 'main', ALLOW],
+  ['worktree: push origin main', cmdIn('git push origin main', dirs.worktree), 'main', BLOCK],
+  ['commit on main when cwd is main', cmdIn('git commit -m "x"', dirs.main), 'feat', BLOCK],
+  ['bare push on main when cwd is main', cmdIn('git push', dirs.main), 'feat', BLOCK],
+  [
+    'cd into main, then commit',
+    cmdIn(`cd ${mainPath} && git commit -m "x"`, dirs.worktree),
+    'main',
+    BLOCK,
+  ],
+  [
+    'cd into a subdirectory, then commit',
+    cmdIn('cd sub && git commit -m "x"', dirs.worktree),
+    'main',
+    ALLOW,
+  ],
+  [
+    'cd into the worktree, then commit',
+    cmdIn(`cd ${worktreePath}; git commit -m "x"`, dirs.main),
+    'main',
+    ALLOW,
+  ],
+  [
+    'cd to an unknown place, then commit',
+    cmdIn('cd $SOMEWHERE && git commit -m "x"', dirs.worktree),
+    'main',
+    BLOCK,
+  ],
+  ['-C main, commit', cmdIn(`git -C ${mainPath} commit -m "x"`, dirs.worktree), 'main', BLOCK],
+  ['-C worktree, commit', cmdIn(`git -C ${worktreePath} commit -m "x"`, dirs.main), 'main', ALLOW],
+  ['cwd is not a repo: commit', cmdIn('git commit -m "x"', dirs.norepo), 'feat', BLOCK],
+  ['worktree: force push still blocked', cmdIn('git push --force', dirs.worktree), 'main', BLOCK],
   // Chaining + git.exe
   ['chain &&', cmd('cd src && git push --force'), 'feat', BLOCK],
   ['chain ;', cmd('cd src; git reset --hard'), 'feat', BLOCK],
@@ -112,7 +175,7 @@ const rows = cases.map(([name, input, dirKey, expected]) => {
   const res = spawnSync(process.execPath, [hook], {
     input,
     encoding: 'utf8',
-    env: { ...process.env, CLAUDE_PROJECT_DIR: dirs[dirKey] },
+    env: { ...env, CLAUDE_PROJECT_DIR: dirs[dirKey] },
   })
   const ok = res.status === expected
   return {

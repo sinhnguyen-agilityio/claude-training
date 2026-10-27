@@ -3,6 +3,7 @@
 // To add a rule or a protected branch, edit PROTECTED_BRANCHES / RULES below — no logic changes.
 import { readFileSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
+import { resolve } from 'node:path'
 
 const PROTECTED_BRANCHES = ['main', 'master']
 
@@ -126,12 +127,21 @@ function readInput() {
   if (typeof command !== 'string' || command.trim() === '') {
     block('block-forbidden hook: tool_input.command is missing or empty. Blocking the command.')
   }
-  return command
+  // The directory the command runs in. In a linked worktree this differs from CLAUDE_PROJECT_DIR
+  // (the main checkout), and the branch must be read where the command actually runs.
+  const cwd = typeof parsed.cwd === 'string' ? parsed.cwd : ''
+  return {
+    command,
+    cwd: cwd || process.env.CLAUDE_PROJECT_DIR || process.cwd(),
+  }
 }
 
-function readBranch() {
-  const cwd = process.env.CLAUDE_PROJECT_DIR || process.cwd()
-  const res = spawnSync('git', ['rev-parse', '--abbrev-ref', 'HEAD'], { cwd, encoding: 'utf8' })
+// Returns the branch checked out in `cwd`, or null when it cannot be read.
+function readBranch(cwd) {
+  const res = spawnSync('git', ['rev-parse', '--abbrev-ref', 'HEAD'], {
+    cwd,
+    encoding: 'utf8',
+  })
   if (res.error || res.status !== 0) return null
   const name = res.stdout.trim()
   return name === '' || name === 'HEAD' ? null : name
@@ -151,30 +161,56 @@ function parseGit(segment) {
   if (exe !== 'git') return null
 
   const config = []
+  const chdir = []
   let i = 1
   while (i < tokens.length && tokens[i].startsWith('-')) {
     if (tokens[i] === '-c' && i + 1 < tokens.length) {
       config.push(tokens[i + 1])
       i += 2
     } else if (GLOBAL_OPTS_WITH_VALUE.includes(tokens[i])) {
+      if (tokens[i] === '-C' && i + 1 < tokens.length) chdir.push(tokens[i + 1])
       i += 2
     } else {
       i += 1
     }
   }
-  return { sub: tokens[i] ?? '', args: tokens.slice(i + 1), config }
+  return { sub: tokens[i] ?? '', args: tokens.slice(i + 1), config, chdir }
+}
+
+const CD_COMMANDS = ['cd', 'chdir', 'pushd', 'set-location', 'sl']
+
+// The directory after `segment` runs, or null when it cannot be worked out (null makes the branch
+// unknown, which blocks commits and bare pushes). Only `cd`-like segments change it.
+function dirAfter(segment, dir) {
+  const [name, target] = segment.split(/\s+/).map((t) => t.replace(/^['"]+|['"]+$/g, ''))
+  if (!CD_COMMANDS.includes(name.toLowerCase())) return dir
+  if (dir === null || !target || target.startsWith('-') || /[$%~`]/.test(target)) return null
+  return resolve(dir, target)
 }
 
 function main() {
-  const command = readInput()
-  let cachedBranch
-  const branch = () => (cachedBranch === undefined ? (cachedBranch = readBranch()) : cachedBranch)
+  const { command, cwd } = readInput()
+  let dir = cwd
+  const branches = new Map()
+  const branchIn = (where) => {
+    if (where === null) return null
+    if (!branches.has(where)) branches.set(where, readBranch(where))
+    return branches.get(where)
+  }
 
   for (const raw of command.split(/&&|\|\||;|\|/)) {
     const segment = raw.trim()
-    const git = segment && parseGit(segment)
+    if (!segment) continue
+    dir = dirAfter(segment, dir)
+    const git = parseGit(segment)
     if (!git) continue
 
+    // `git -C <path>` runs in <path>, relative to the directory the command is in.
+    const gitDir = git.chdir.reduce(
+      (where, path) => (where === null ? null : resolve(where, path)),
+      dir,
+    )
+    const branch = () => branchIn(gitDir)
     const { args } = git
     const ctx = {
       ...git,
