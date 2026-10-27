@@ -34,14 +34,15 @@ backend.
 
 ## 4. Mock API contract
 
-| Method   | Path             | Success                               | Errors                    |
-| -------- | ---------------- | ------------------------------------- | ------------------------- |
-| `GET`    | `/api/users`     | 200 `{ data, total, page, pageSize }` | 400 invalid query         |
-| `GET`    | `/api/users/:id` | 200 `User`                            | 404                       |
-| `POST`   | `/api/users`     | 201 `User`                            | 400 validation, 409 email |
-| `PATCH`  | `/api/users/:id` | 200 `User`                            | 400, 404, 409             |
-| `DELETE` | `/api/users/:id` | 204                                   | 404                       |
-| `POST`   | `/api/reset`     | 204                                   | —                         |
+| Method   | Path                | Success                               | Errors                    |
+| -------- | ------------------- | ------------------------------------- | ------------------------- |
+| `GET`    | `/api/users`        | 200 `{ data, total, page, pageSize }` | 400 invalid query         |
+| `GET`    | `/api/users/export` | 200 `{ data, total }`                 | 400 invalid query         |
+| `GET`    | `/api/users/:id`    | 200 `User`                            | 404                       |
+| `POST`   | `/api/users`        | 201 `User`                            | 400 validation, 409 email |
+| `PATCH`  | `/api/users/:id`    | 200 `User`                            | 400, 404, 409             |
+| `DELETE` | `/api/users/:id`    | 204                                   | 404                       |
+| `POST`   | `/api/reset`        | 204                                   | —                         |
 
 `GET /api/users` query params: `q` (search text, case-insensitive), `role`, `status`,
 `sort` (`name` \| `createdAt`), `order` (`asc` \| `desc`), `page` (1-based), `pageSize`
@@ -52,6 +53,11 @@ backend.
 - Sorting by `name` orders by last name, then first name.
 - Invalid values return 400: `pageSize` above 50, `page` below 1, or an unknown `role`, `status`,
   `sort` or `order`. A `page` past the end returns 200 with empty `data`.
+
+`GET /api/users/export` takes `q`, `role`, `status`, `sort` and `order` with the same meaning,
+defaults and validation as the list, and returns every matching user in the requested order with
+`total`. It has no paging and no row cap: `page` and `pageSize` are ignored. An invalid `role`,
+`status`, `sort` or `order` returns 400 with the list's error body.
 
 Error body: `{ message: string, fieldErrors?: Record<string, string> }`.
 
@@ -109,6 +115,32 @@ values). `POST /api/reset` restores the seed data. Every mock response has a sma
 - A header button restores the seed data after a confirmation, then shows a toast "Demo data
   reset", clears cached data and goes to `/users` (page 1, no filters).
 
+### F8 — Export users (CSV)
+
+- The `/users` toolbar has an "Export CSV" button. **When** I click it **Then** a file with all
+  users matching the current search, role, status and sort (not only the visible page, in the
+  current sort order) is downloaded, named `users-YYYY-MM-DD.csv` with the browser's local date.
+- The header row is exactly `First name,Last name,Email,Phone,Role,Status,Created at,Updated at`.
+  Role and Status are the stored values (`admin`, `active`), a null phone is an empty cell, and
+  dates are exactly as the API returns them.
+- The file is UTF-8 with a BOM, comma-delimited, with CRLF line endings and a trailing newline. A
+  value containing a comma, a double quote, CR or LF is wrapped in double quotes, with inner quotes
+  doubled.
+- **Given** a cell starts with `=`, `+`, `-`, `@`, a tab or CR **Then** it is prefixed with a
+  single quote `'`, in every column. **Exception:** a phone matching `^\+[0-9]+( [0-9]+)*$` is
+  written as is. The exception stays only if phone cells display as their text in desktop Excel
+  for Windows (Microsoft 365) and Google Sheets (checked manually before merge).
+- **Given** the list has no results, is loading, or is in its error state **Then** the button is
+  `aria-disabled` (still focusable), clicking does nothing, and its tooltip reads "No users to
+  export".
+- **While** the file is generated the button is `aria-busy` and cannot be clicked again. No success
+  toast appears: the browser's download is the feedback.
+- **Given** the export request or file generation fails **Then** the toast "Export failed" shows
+  and no file is downloaded.
+- The button and its tooltip are keyboard accessible, and the toolbar fits at 375 px.
+- **Accepted risk:** the file contains personal data (email, phone) and the app has no
+  authentication. The client accepted this risk.
+
 ## 6. Non-functional requirements
 
 - Accessible: semantic HTML, labelled inputs, keyboard-operable dialogs, focus management.
@@ -118,4 +150,5 @@ values). `POST /api/reset` restores the seed data. Every mock response has a sma
 
 ## 7. Out of scope
 
-Authentication and permissions, a real backend, bulk actions, import/export, i18n, avatars.
+Authentication and permissions, a real backend, bulk actions, import, i18n, avatars. (CSV export
+is in scope as F8; import and other export formats are not.)

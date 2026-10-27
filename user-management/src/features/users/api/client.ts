@@ -1,4 +1,9 @@
-import type { UsersPage, UsersQueryInput } from '@/features/users/query'
+import type {
+  UsersExport,
+  UsersExportQueryInput,
+  UsersPage,
+  UsersQueryInput,
+} from '@/features/users/query'
 import type { User, UserCreateInput, UserUpdate } from '@/features/users/schema'
 
 /** Error body for every non-2xx response (SPEC §4). */
@@ -50,7 +55,7 @@ async function request<T>(path: string, { json, ...init }: RequestInit & { json?
   return (response.status === 204 ? undefined : await response.json()) as T
 }
 
-function toSearchParams(query: UsersQueryInput) {
+function toSearchParams(query: UsersQueryInput | UsersExportQueryInput) {
   const params = new URLSearchParams()
   for (const [key, value] of Object.entries(query)) {
     if (value !== undefined && value !== '') params.set(key, String(value))
@@ -63,6 +68,11 @@ export const usersApi = {
   list(query: UsersQueryInput = {}) {
     const search = toSearchParams(query)
     return request<UsersPage>(`/api/users${search ? `?${search}` : ''}`)
+  },
+  /** Every user matching the filters, unpaged (SPEC F8). */
+  export(query: UsersExportQueryInput = {}) {
+    const search = toSearchParams(query)
+    return request<UsersExport>(`/api/users/export${search ? `?${search}` : ''}`)
   },
   get(id: string) {
     return request<User>(`/api/users/${encodeURIComponent(id)}`)

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import type { UsersListState } from '@/features/users/hooks/useUsersListParams'
 import { roleOptions, statusOptions } from '@/features/users/labels'
 import type { SortOrder, UsersSortField } from '@/features/users/query'
@@ -22,6 +22,8 @@ export interface UsersToolbarProps {
   onRoleChange: (role: UserRole | undefined) => void
   onStatusChange: (status: UserStatus | undefined) => void
   onSortChange: (sort: UsersSortField, order: SortOrder) => void
+  /** Rendered on its own row below the controls, e.g. the Export CSV button. */
+  action?: ReactNode
 }
 
 function isOneOf<T extends string>(values: readonly T[], value: string): value is T {
@@ -35,6 +37,7 @@ export function UsersToolbar({
   onRoleChange,
   onStatusChange,
   onSortChange,
+  action,
 }: UsersToolbarProps) {
   return (
     <div role="search" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr]">
@@ -71,6 +74,7 @@ export function UsersToolbar({
           onSortChange(sort, order)
         }}
       />
+      {action && <div className="flex justify-end sm:col-span-2 lg:col-span-4">{action}</div>}
     </div>
   )
 }

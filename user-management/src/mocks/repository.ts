@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import type { UsersPage, UsersQuery } from '@/features/users/query'
+import type { UsersExport, UsersExportQuery, UsersPage, UsersQuery } from '@/features/users/query'
 import { userSchema, type User, type UserCreate, type UserUpdate } from '@/features/users/schema'
 import { seedUsers } from '@/mocks/seed'
 
@@ -16,6 +16,8 @@ export interface UserRepository {
   /** Writes the seed data if storage is empty or unreadable. */
   ensureSeeded(): void
   list(query: UsersQuery): UsersPage
+  /** Every user matching the filters, in sort order, without paging. */
+  listAll(query: UsersExportQuery): UsersExport
   get(id: string): User | undefined
   /** @throws {EmailTakenError} */
   create(input: UserCreate): User
@@ -58,15 +60,22 @@ export function createUserRepository({
     }
   }
 
+  function listAll(query: UsersExportQuery): UsersExport {
+    const data = load()
+      .filter((user) => matches(user, query))
+      .sort(comparator(query))
+    return { data, total: data.length }
+  }
+
   return {
     ensureSeeded() {
       load()
     },
 
+    listAll,
+
     list(query) {
-      const matching = load()
-        .filter((user) => matches(user, query))
-        .sort(comparator(query))
+      const matching = listAll(query).data
       const start = (query.page - 1) * query.pageSize
       return {
         data: matching.slice(start, start + query.pageSize),
@@ -123,7 +132,7 @@ function parseJson(raw: string | null): unknown {
 }
 
 /** Search matches first name, last name or email, each separately (SPEC §4). */
-function matches(user: User, { q, role, status }: UsersQuery) {
+function matches(user: User, { q, role, status }: UsersExportQuery) {
   if (role && user.role !== role) return false
   if (status && user.status !== status) return false
   if (!q) return true
@@ -136,7 +145,7 @@ function matches(user: User, { q, role, status }: UsersQuery) {
 const collator = new Intl.Collator('en', { sensitivity: 'base' })
 
 /** Name sorts by last name, then first name. Ties fall back to email so the order is stable. */
-function comparator({ sort, order }: UsersQuery) {
+function comparator({ sort, order }: UsersExportQuery) {
   const direction = order === 'asc' ? 1 : -1
   return (a: User, b: User) => {
     const primary =

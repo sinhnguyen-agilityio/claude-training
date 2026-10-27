@@ -1,12 +1,17 @@
 import { useEffect, useMemo } from 'react'
 import { Link, useLocation } from 'react-router'
 import { useUsers } from '@/features/users/api/hooks'
+import { ExportCsvButton } from '@/features/users/components/ExportCsvButton'
 import { Pagination } from '@/features/users/components/Pagination'
 import { UsersTable } from '@/features/users/components/UsersTable'
 import { UsersToolbar } from '@/features/users/components/UsersToolbar'
 import { useUsersListParams } from '@/features/users/hooks/useUsersListParams'
 import { rememberListSearch } from '@/features/users/listLocation'
-import { lastPageOf, type UsersQueryInput } from '@/features/users/query'
+import {
+  lastPageOf,
+  type UsersExportQueryInput,
+  type UsersQueryInput,
+} from '@/features/users/query'
 import { Button } from '@/shared/ui/Button'
 import { EmptyState, ErrorState, TableSkeleton } from '@/shared/ui/states'
 
@@ -24,7 +29,19 @@ export function UsersListPage() {
     }),
     [state],
   )
-  const { data, error, refetch, isFetching } = useUsers(query)
+  const { data, error, refetch, isFetching, isPlaceholderData } = useUsers(query)
+  // The export takes the same filters and sort, but never the page (SPEC F8).
+  const exportQuery: UsersExportQueryInput = useMemo(
+    () => ({
+      q: query.q,
+      role: query.role,
+      status: query.status,
+      sort: query.sort,
+      order: query.order,
+    }),
+    [query],
+  )
+  const exportUnavailable = !data || isPlaceholderData || Boolean(error) || data.total === 0
 
   const { search } = useLocation()
   useEffect(() => rememberListSearch(search), [search])
@@ -92,6 +109,7 @@ export function UsersListPage() {
         onRoleChange={setRole}
         onStatusChange={setStatus}
         onSortChange={setSort}
+        action={<ExportCsvButton query={exportQuery} unavailable={exportUnavailable} />}
       />
       {renderResults()}
     </section>

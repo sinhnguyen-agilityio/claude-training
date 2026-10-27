@@ -22,8 +22,13 @@ export const usersQuerySchema = z.object({
   pageSize: z.coerce.number().int().min(1).max(MAX_PAGE_SIZE).default(DEFAULT_PAGE_SIZE),
 })
 
+/** Query parameters of `GET /api/users/export`: the list filters without paging (SPEC §4). */
+export const usersExportQuerySchema = usersQuerySchema.omit({ page: true, pageSize: true })
+
 export type UsersQuery = z.output<typeof usersQuerySchema>
 export type UsersQueryInput = z.input<typeof usersQuerySchema>
+export type UsersExportQuery = z.output<typeof usersExportQuerySchema>
+export type UsersExportQueryInput = z.input<typeof usersExportQuerySchema>
 export type UsersSortField = (typeof USERS_SORT_FIELDS)[number]
 export type SortOrder = (typeof SORT_ORDERS)[number]
 
@@ -33,6 +38,12 @@ export interface UsersPage {
   total: number
   page: number
   pageSize: number
+}
+
+/** Response body of `GET /api/users/export`. */
+export interface UsersExport {
+  data: User[]
+  total: number
 }
 
 /** The last page number for `total` items; at least 1, even when there are none. */
