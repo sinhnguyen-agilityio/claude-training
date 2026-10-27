@@ -147,23 +147,57 @@ function readBranch(cwd) {
   return name === '' || name === 'HEAD' ? null : name
 }
 
-// Returns { sub, args, config } for a git segment, or null for any other command.
-function parseGit(segment) {
-  const tokens = segment
+// Commands that run another command. The directory or repository it acts on may differ from the
+// current one (`env -C dir`, `env GIT_DIR=...`), so a git command behind one has an unknown branch.
+const WRAPPERS = ['env', 'command', 'builtin', 'exec', 'nohup', 'time']
+const WRAPPER_OPTS_WITH_VALUE = ['-C', '--chdir', '-u', '--unset', '-S', '--split-string']
+// Options that point git at another repository or ref namespace than the current directory's.
+const REDIRECT_OPTS = ['--git-dir', '--work-tree', '--namespace']
+const CD_COMMANDS = ['cd', 'chdir', 'pushd', 'push-location', 'set-location', 'sl']
+// Change the directory in a way that is not tracked: the directory is unknown afterwards.
+const UNTRACKED_CD_COMMANDS = ['popd', 'pop-location']
+
+const tokenize = (segment) =>
+  segment
     .split(/\s+/)
     .filter(Boolean)
     .map((t) => t.replace(/^['"]+|['"]+$/g, ''))
-  const exe = tokens[0]
-    ?.split(/[\\/]/)
+
+const commandName = (token = '') =>
+  token
+    .split(/[\\/]/)
     .pop()
     .toLowerCase()
     .replace(/\.exe$/, '')
-  if (exe !== 'git') return null
+
+// Returns { sub, args, config, chdir, redirected } for a git segment, or null for any other
+// command. `redirected` means git may act on a different repository than the current directory's.
+function parseGit(tokens) {
+  let start = 0
+  let redirected = false
+  let wrapped = false
+  while (start < tokens.length) {
+    const token = tokens[start]
+    if (/^[A-Za-z_][A-Za-z0-9_]*=/.test(token)) {
+      if (/^GIT_(DIR|WORK_TREE|NAMESPACE)=/.test(token)) redirected = true
+      start += 1
+    } else if (WRAPPERS.includes(commandName(token))) {
+      redirected = wrapped = true
+      start += 1
+    } else if (wrapped && token.startsWith('-')) {
+      start += WRAPPER_OPTS_WITH_VALUE.includes(token) ? 2 : 1
+    } else {
+      break
+    }
+  }
+  if (commandName(tokens[start]) !== 'git') return null
 
   const config = []
   const chdir = []
-  let i = 1
+  let i = start + 1
   while (i < tokens.length && tokens[i].startsWith('-')) {
+    const [option] = tokens[i].split('=')
+    if (REDIRECT_OPTS.includes(option)) redirected = true
     if (tokens[i] === '-c' && i + 1 < tokens.length) {
       config.push(tokens[i + 1])
       i += 2
@@ -174,17 +208,26 @@ function parseGit(segment) {
       i += 1
     }
   }
-  return { sub: tokens[i] ?? '', args: tokens.slice(i + 1), config, chdir }
+  return { sub: tokens[i] ?? '', args: tokens.slice(i + 1), config, chdir, redirected }
 }
 
-const CD_COMMANDS = ['cd', 'chdir', 'pushd', 'set-location', 'sl']
+// The directory after a segment runs, or null when it cannot be worked out (null makes the branch
+// unknown, which blocks commits and bare pushes). `prevOp` and `nextOp` are the operators around
+// the segment. A `cd` only carries over when it always runs (not behind `||` or `|`) and the next
+// command runs only if it worked (`&&`), so the shell and this hook agree on where that command is.
+function dirAfter(tokens, dir, prevOp, nextOp) {
+  const name = commandName(tokens[0])
+  if (WRAPPERS.includes(name)) {
+    const moves = (t) => CD_COMMANDS.includes(t.toLowerCase()) || UNTRACKED_CD_COMMANDS.includes(t)
+    return tokens.some(moves) ? null : dir
+  }
+  if (UNTRACKED_CD_COMMANDS.includes(name)) return null
+  if (!CD_COMMANDS.includes(name)) return dir
 
-// The directory after `segment` runs, or null when it cannot be worked out (null makes the branch
-// unknown, which blocks commits and bare pushes). Only `cd`-like segments change it.
-function dirAfter(segment, dir) {
-  const [name, target] = segment.split(/\s+/).map((t) => t.replace(/^['"]+|['"]+$/g, ''))
-  if (!CD_COMMANDS.includes(name.toLowerCase())) return dir
-  if (dir === null || !target || target.startsWith('-') || /[$%~`]/.test(target)) return null
+  const target = tokens[1]
+  const alwaysRuns = prevOp === undefined || prevOp === '&&' || prevOp === ';'
+  const unclear = tokens.length !== 2 || target.startsWith('-') || /[$%~`]/.test(target)
+  if (dir === null || !alwaysRuns || nextOp !== '&&' || unclear) return null
   return resolve(dir, target)
 }
 
@@ -198,18 +241,24 @@ function main() {
     return branches.get(where)
   }
 
-  for (const raw of command.split(/&&|\|\||;|\|/)) {
-    const segment = raw.trim()
+  // Splitting on a capturing group keeps the operators: [segment, operator, segment, ...].
+  const parts = command.split(/(&&|\|\||;|\||\n)/)
+  for (let p = 0; p < parts.length; p += 2) {
+    const segment = parts[p].trim()
     if (!segment) continue
-    dir = dirAfter(segment, dir)
-    const git = parseGit(segment)
+    // A subshell or group has its own directory, so the directory is unknown from here on.
+    // Only the opening is checked: a closing `)` also ends many commit message lines.
+    if (/^[({]/.test(segment)) dir = null
+    const tokens = tokenize(segment.replace(/^[({\s]+/, '').replace(/[)}\s]+$/, ''))
+    dir = dirAfter(tokens, dir, parts[p - 1], parts[p + 1])
+    const git = parseGit(tokens)
     if (!git) continue
 
-    // `git -C <path>` runs in <path>, relative to the directory the command is in.
-    const gitDir = git.chdir.reduce(
-      (where, path) => (where === null ? null : resolve(where, path)),
-      dir,
-    )
+    // `git -C <path>` runs in <path>, relative to the directory the command is in. Pointing git
+    // at another repository (`--git-dir`, `GIT_DIR=`, behind `env`) leaves the branch unknown.
+    const gitDir = git.redirected
+      ? null
+      : git.chdir.reduce((where, path) => (where === null ? null : resolve(where, path)), dir)
     const branch = () => branchIn(gitDir)
     const { args } = git
     const ctx = {

@@ -130,7 +130,7 @@ const cases = [
   ],
   [
     'cd into the worktree, then commit',
-    cmdIn(`cd ${worktreePath}; git commit -m "x"`, dirs.main),
+    cmdIn(`cd ${worktreePath} && git commit -m "x"`, dirs.main),
     'main',
     ALLOW,
   ],
@@ -144,6 +144,76 @@ const cases = [
   ['-C worktree, commit', cmdIn(`git -C ${worktreePath} commit -m "x"`, dirs.main), 'main', ALLOW],
   ['cwd is not a repo: commit', cmdIn('git commit -m "x"', dirs.norepo), 'feat', BLOCK],
   ['worktree: force push still blocked', cmdIn('git push --force', dirs.worktree), 'main', BLOCK],
+  // A directory change that may not happen, or that is not tracked, leaves the branch unknown
+  ...[
+    ['cd then ;', `cd ${worktreePath}; git commit -m "x"`],
+    ['cd then ||', `cd ${worktreePath} || git commit -m "x"`],
+    ['cd then |', `cd ${worktreePath} | git commit -m "x"`],
+    ['cd behind ||', `false || cd ${worktreePath} && git commit -m "x"`],
+    ['cd with extra arguments', `cd ${worktreePath} extra && git commit -m "x"`],
+    ['env -C', `env -C ${worktreePath} git commit -m "x"`],
+  ].map(([name, command]) => [`unknown dir: ${name}`, cmdIn(command, dirs.main), 'main', BLOCK]),
+  // Run from the worktree, where reading the working directory alone would say "feature branch"
+  ...[
+    ['popd', 'popd && git commit -m "x"'],
+    ['Pop-Location', 'Pop-Location && git commit -m "x"'],
+    ['builtin cd', `builtin cd ${mainPath} && git commit -m "x"`],
+    ['subshell', `(cd ${mainPath} && git commit -m "x")`],
+    ['group', `{ cd ${mainPath} && git commit -m "x"; }`],
+  ].map(([name, command]) => [
+    `unknown dir: ${name}`,
+    cmdIn(command, dirs.worktree),
+    'main',
+    BLOCK,
+  ]),
+  [
+    'Push-Location into main, then commit',
+    cmdIn(`Push-Location ${mainPath} && git commit -m "x"`, dirs.worktree),
+    'main',
+    BLOCK,
+  ],
+  // Pointing git at another repository leaves the branch unknown, however it is spelled
+  ...[
+    ['--git-dir=', `git --git-dir=${mainPath}/.git --work-tree=${mainPath} commit -m "x"`],
+    ['--git-dir value', `git --git-dir ${mainPath}/.git commit -m "x"`],
+    ['--work-tree', `git --work-tree ${mainPath} commit -m "x"`],
+    ['GIT_DIR=', `GIT_DIR=${mainPath}/.git git commit -m "x"`],
+    ['GIT_WORK_TREE=', `GIT_WORK_TREE=${mainPath} git commit -m "x"`],
+    ['env GIT_DIR=', `env GIT_DIR=${mainPath}/.git git commit -m "x"`],
+    ['bare push with --git-dir', `git --git-dir=${mainPath}/.git push`],
+  ].map(([name, command]) => [
+    `redirected git: ${name}`,
+    cmdIn(command, dirs.worktree),
+    'main',
+    BLOCK,
+  ]),
+  [
+    '--git-dir on a command that ignores the branch',
+    cmdIn(`git --git-dir=${mainPath}/.git status`, dirs.worktree),
+    'main',
+    ALLOW,
+  ],
+  [
+    'plain env assignment before commit',
+    cmdIn('FOO=1 git commit -m "x"', dirs.worktree),
+    'main',
+    ALLOW,
+  ],
+  ['env wrapper still gets the destructive rules', cmd('env git push --force'), 'feat', BLOCK],
+  // Commands on separate lines
+  ['second line commits on main', cmdIn('git add .\ngit commit -m "x"', dirs.main), 'feat', BLOCK],
+  [
+    'second line commits on a feature branch',
+    cmdIn('git add .\ngit commit -m "x"', dirs.worktree),
+    'main',
+    ALLOW,
+  ],
+  [
+    'multi-line message whose first line ends in )',
+    cmdIn('git commit -m "feat: x (F7)\n\nCloses #4"', dirs.worktree),
+    'main',
+    ALLOW,
+  ],
   // Chaining + git.exe
   ['chain &&', cmd('cd src && git push --force'), 'feat', BLOCK],
   ['chain ;', cmd('cd src; git reset --hard'), 'feat', BLOCK],
