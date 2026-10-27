@@ -1,0 +1,11 @@
+# Never push to a protected branch. Git writes one line per ref being pushed to stdin:
+#   <local ref> <local sha> <remote ref> <remote sha>
+# The remote ref is checked, so `git push origin HEAD:main` and deleting main are caught too.
+while read -r local_ref local_sha remote_ref remote_sha; do
+  case "$remote_ref" in
+    refs/heads/main | refs/heads/master)
+      echo "Cannot push to protected branch \"${remote_ref#refs/heads/}\". Push a feature branch and open a pull request." >&2
+      exit 1
+      ;;
+  esac
+done
