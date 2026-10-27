@@ -214,6 +214,48 @@ const cases = [
     'main',
     ALLOW,
   ],
+  // A line continuation joins the lines, so the subcommand must not be lost in the split
+  ['continuation: commit on main', cmdIn('git \\\ncommit -m "x"', dirs.main), 'feat', BLOCK],
+  ['continuation: CRLF', cmdIn('git \\\r\ncommit -m "x"', dirs.main), 'feat', BLOCK],
+  ['continuation: PowerShell backtick', cmdIn('git `\ncommit -m "x"', dirs.main), 'feat', BLOCK],
+  [
+    'continuation: commit on a feature branch',
+    cmdIn('git \\\ncommit -m "x"', dirs.worktree),
+    'main',
+    ALLOW,
+  ],
+  ['continuation: force push', cmdIn('git push \\\n  --force', dirs.worktree), 'main', BLOCK],
+  // A GIT_DIR-style variable set in any segment makes the branch unknown for later git commands
+  ...[
+    ['export GIT_DIR', `export GIT_DIR=${mainPath}/.git && git commit -m "x"`],
+    ['export GIT_WORK_TREE', `export GIT_WORK_TREE=${mainPath}; git commit -m "x"`],
+    ['PowerShell $env:GIT_DIR', `$env:GIT_DIR='${mainPath}/.git'; git commit -m "x"`],
+    ['set GIT_DIR', `set GIT_DIR=${mainPath}/.git && git commit -m "x"`],
+    ['declare -x GIT_COMMON_DIR', `declare -x GIT_COMMON_DIR=${mainPath}/.git; git push`],
+  ].map(([name, command]) => [
+    `env redirect: ${name}`,
+    cmdIn(command, dirs.worktree),
+    'main',
+    BLOCK,
+  ]),
+  [
+    'env redirect: setx',
+    cmdIn(`setx GIT_DIR ${mainPath}/.git && git commit -m "x"`, dirs.worktree),
+    'main',
+    BLOCK,
+  ],
+  [
+    'env redirect: export without a value',
+    cmdIn('export GIT_WORK_TREE; git commit -m "x"', dirs.worktree),
+    'main',
+    BLOCK,
+  ],
+  [
+    'a commit message that only names the variables',
+    cmdIn('git commit -m "docs: explain GIT_DIR and GIT_WORK_TREE handling"', dirs.worktree),
+    'main',
+    ALLOW,
+  ],
   // Chaining + git.exe
   ['chain &&', cmd('cd src && git push --force'), 'feat', BLOCK],
   ['chain ;', cmd('cd src; git reset --hard'), 'feat', BLOCK],

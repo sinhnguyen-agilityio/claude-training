@@ -1,6 +1,11 @@
 // PreToolUse hook (matcher: Bash|PowerShell): blocks forbidden git commands.
 // Reads the tool call JSON from stdin. Exit 2 + reason on stderr blocks the command; exit 0 allows.
 // To add a rule or a protected branch, edit PROTECTED_BRANCHES / RULES below — no logic changes.
+//
+// This is an early warning, not the enforcement. It guesses where git will run from the command
+// text, and no text parser can be complete: command substitution and subshells in the middle of a
+// line (`echo $(cd main; git commit)`) are not followed. The protected-branch rule is enforced by
+// the git hooks in user-management/.husky (pre-commit, pre-push), which see the real branch.
 import { readFileSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 import { resolve } from 'node:path'
@@ -242,7 +247,19 @@ function main() {
   }
 
   // Splitting on a capturing group keeps the operators: [segment, operator, segment, ...].
-  const parts = command.split(/(&&|\|\||;|\||\n)/)
+  // A backslash (or a PowerShell backtick) before a newline continues the line, so `git \` +
+  // `commit` is one command. Join those lines first, or the split below would hide the subcommand.
+  const joined = command.replace(/(\\|`)\r?\n/g, '')
+  // Anywhere in the command, a GIT_DIR-style variable can send later git commands to another
+  // repository (`export GIT_DIR=... && git commit`), so the branch cannot be trusted.
+  // Matches an assignment (`GIT_DIR=`, `export X=`, `$env:X=`, `set X=`) or a setter that takes the
+  // name without `=` (`setx`, `export X`, `SetEnvironmentVariable`), not a mere mention in a message.
+  const GIT_VARS = 'GIT_(?:DIR|WORK_TREE|NAMESPACE|COMMON_DIR)'
+  const envRedirects = new RegExp(
+    `\\b${GIT_VARS}\\b\\s*=|\\b(?:setx|export|SetEnvironmentVariable)\\b[^;&|\\n]*\\b${GIT_VARS}\\b`,
+    'i',
+  ).test(joined)
+  const parts = joined.split(/(&&|\|\||;|\||\n)/)
   for (let p = 0; p < parts.length; p += 2) {
     const segment = parts[p].trim()
     if (!segment) continue
@@ -256,9 +273,10 @@ function main() {
 
     // `git -C <path>` runs in <path>, relative to the directory the command is in. Pointing git
     // at another repository (`--git-dir`, `GIT_DIR=`, behind `env`) leaves the branch unknown.
-    const gitDir = git.redirected
-      ? null
-      : git.chdir.reduce((where, path) => (where === null ? null : resolve(where, path)), dir)
+    const gitDir =
+      git.redirected || envRedirects
+        ? null
+        : git.chdir.reduce((where, path) => (where === null ? null : resolve(where, path)), dir)
     const branch = () => branchIn(gitDir)
     const { args } = git
     const ctx = {
