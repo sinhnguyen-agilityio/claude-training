@@ -1,0 +1,45 @@
+$ vitest run --coverage
+
+ RUN  v5.0.4 C:/Users/sinhn/workspace/training/sinh.nguyen/claude/.claude/worktrees/feat-5-export-users-csv/user-management
+      Coverage enabled with v8
+
+
+ Test Files  27 passed (27)
+      Tests  251 passed (251)
+   Start at  23:16:39
+   Duration  24.89s (environment 41%, tests 29%, setup 23%, import 4%, worker 2%, transform 1%)
+
+Environment  jsdom was created 27 times · 61.38s total, 41% of tracked time
+             create it once per worker with pool: 'vmThreads' (keeps per-file isolation) or isolate: false (shares it across files)
+             learn more: https://vitest.dev/guide/improving-performance#test-environments
+
+[34m % [39m[2mCoverage report from [22m[33mv8[39m
+-------------------|---------|----------|---------|---------|-------------------
+File               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+-------------------|---------|----------|---------|---------|-------------------
+All files          |   99.27 |    95.42 |     100 |    99.8 |                   
+ features/users    |      98 |      100 |     100 |   97.91 |                   
+  listLocation.ts  |   83.33 |      100 |     100 |   83.33 | 21                
+ ...ures/users/api |     100 |    95.65 |     100 |     100 |                   
+  client.ts        |     100 |    95.65 |     100 |     100 | 75                
+ ...ers/components |     100 |     91.8 |     100 |     100 |                   
+  ...serButton.tsx |     100 |    88.88 |     100 |     100 | 42                
+  ...ataButton.tsx |     100 |       50 |     100 |     100 | 24                
+  UserForm.tsx     |     100 |    88.88 |     100 |     100 | 62,69             
+  UsersToolbar.tsx |     100 |    92.85 |     100 |     100 | 62                
+ mocks             |   98.43 |       95 |     100 |     100 |                   
+  handlers.ts      |   96.22 |     90.9 |     100 |     100 | 21,111            
+  repository.ts    |     100 |    97.36 |     100 |     100 | 155               
+ shared/hooks      |   94.11 |    85.71 |     100 |     100 |                   
+  ...angesGuard.ts |   94.11 |    85.71 |     100 |     100 | 16,26             
+ shared/ui         |     100 |    95.45 |     100 |     100 |                   
+  ...irmDialog.tsx |     100 |    90.32 |     100 |     100 | 44,54,95          
+  Tooltip.tsx      |     100 |       75 |     100 |     100 | 27                
+-------------------|---------|----------|---------|---------|-------------------
+
+=============================== Coverage summary ===============================
+Statements   : 99.27% ( 551/555 )
+Branches     : 95.42% ( 313/328 )
+Functions    : 100% ( 203/203 )
+Lines        : 99.8% ( 501/502 )
+================================================================================
