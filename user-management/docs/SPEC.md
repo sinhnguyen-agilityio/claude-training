@@ -34,14 +34,15 @@ backend.
 
 ## 4. Mock API contract
 
-| Method   | Path             | Success                               | Errors                    |
-| -------- | ---------------- | ------------------------------------- | ------------------------- |
-| `GET`    | `/api/users`     | 200 `{ data, total, page, pageSize }` | 400 invalid query         |
-| `GET`    | `/api/users/:id` | 200 `User`                            | 404                       |
-| `POST`   | `/api/users`     | 201 `User`                            | 400 validation, 409 email |
-| `PATCH`  | `/api/users/:id` | 200 `User`                            | 400, 404, 409             |
-| `DELETE` | `/api/users/:id` | 204                                   | 404                       |
-| `POST`   | `/api/reset`     | 204                                   | —                         |
+| Method   | Path              | Success                               | Errors                    |
+| -------- | ----------------- | ------------------------------------- | ------------------------- |
+| `GET`    | `/api/users`      | 200 `{ data, total, page, pageSize }` | 400 invalid query         |
+| `GET`    | `/api/users/:id`  | 200 `User`                            | 404                       |
+| `POST`   | `/api/users`      | 201 `User`                            | 400 validation, 409 email |
+| `PATCH`  | `/api/users/:id`  | 200 `User`                            | 400, 404, 409             |
+| `DELETE` | `/api/users/:id`  | 204                                   | 404                       |
+| `POST`   | `/api/users/bulk` | 200 `{ succeeded, failed }`           | 400 validation            |
+| `POST`   | `/api/reset`      | 204                                   | —                         |
 
 `GET /api/users` query params: `q` (search text, case-insensitive), `role`, `status`,
 `sort` (`name` \| `createdAt`), `order` (`asc` \| `desc`), `page` (1-based), `pageSize`
@@ -52,6 +53,15 @@ backend.
 - Sorting by `name` orders by last name, then first name.
 - Invalid values return 400: `pageSize` above 50, `page` below 1, or an unknown `role`, `status`,
   `sort` or `order`. A `page` past the end returns 200 with empty `data`.
+
+`POST /api/users/bulk` takes `{ action: "delete" | "setStatus", ids: string[], status?: "active" |
+"inactive" }` and returns `{ succeeded: string[], failed: [{ id, reason }] }`. A partial failure is
+still 200, and an id that matches no user is reported as `reason: "not_found"`.
+
+- Duplicate ids are removed before processing, and each id appears once in the response.
+- Invalid requests return 400: empty `ids`, more than 50 ids (counted after removing duplicates),
+  more than 500 entries in `ids` before duplicates are removed, an empty or non-string id, an unknown action, or a missing or invalid `status` on `setStatus`.
+- `setStatus` sets a new `updatedAt` on every user it reaches, even one who already had the status.
 
 Error body: `{ message: string, fieldErrors?: Record<string, string> }`.
 
@@ -109,6 +119,27 @@ values). `POST /api/reset` restores the seed data. Every mock response has a sma
 - A header button restores the seed data after a confirmation, then shows a toast "Demo data
   reset", clears cached data and goes to `/users` (page 1, no filters).
 
+### F7 — Bulk actions (`/users`)
+
+- Each row has a checkbox "Select Anna Kowalski" (the user's name), and the header has "Select all users on this
+  page" (indeterminate when some rows are selected, disabled while the list loads). Selection is
+  page-only and lives in component state: a change of page, filter, sort or search clears it, and
+  it is not kept in the URL.
+- **Given** 1 or more rows are selected **Then** an action bar shows "N selected" (a polite live
+  region), **Set active**, **Set inactive**, **Delete** and **Clear selection**.
+- **Delete** asks for confirmation ("Delete N users?"; Cancel keeps the selection and sends
+  nothing). Set active / Set inactive act at once, without confirmation.
+- Success toasts: "N users deleted" / "N users updated". The list refreshes, the selection clears
+  and, if the current page becomes empty, the list goes back one page.
+- A partial failure shows a warning toast ("2 of 3 deleted, 1 failed") and keeps the failed rows
+  selected, minus any that are no longer in the refreshed list. If every id fails or the request errors, an error toast ("Could not delete 3 users")
+  shows and the selection is kept, minus any that are no longer in the refreshed list.
+- While a request runs the actions and checkboxes are disabled, but paging and filters stay
+  usable. If the view changes meanwhile, the request still finishes with its toast and a refresh,
+  and the selection stays cleared.
+- When the action bar disappears after an action, focus moves to the "Users" heading (unless the
+  view has changed). At 375 px the bar wraps onto two rows.
+
 ## 6. Non-functional requirements
 
 - Accessible: semantic HTML, labelled inputs, keyboard-operable dialogs, focus management.
@@ -118,4 +149,4 @@ values). `POST /api/reset` restores the seed data. Every mock response has a sma
 
 ## 7. Out of scope
 
-Authentication and permissions, a real backend, bulk actions, import/export, i18n, avatars.
+Authentication and permissions, a real backend, selecting users across pages, import/export, i18n, avatars.

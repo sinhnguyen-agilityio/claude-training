@@ -7,6 +7,12 @@ interface Toast {
   tone: ToastTone
 }
 
+const toneClasses: Record<ToastTone, string> = {
+  success: 'bg-slate-900',
+  error: 'bg-red-700',
+  warning: 'bg-amber-700',
+}
+
 /** Renders toasts in a live region so screen readers announce them; each one dismisses itself. */
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([])
@@ -39,9 +45,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {toasts.map((toast) => (
           <div
             key={toast.id}
-            className={`pointer-events-auto flex items-center gap-3 rounded-md px-4 py-3 text-sm text-white shadow-lg ${
-              toast.tone === 'error' ? 'bg-red-700' : 'bg-slate-900'
-            }`}
+            className={`pointer-events-auto flex items-center gap-3 rounded-md px-4 py-3 text-sm text-white shadow-lg ${toneClasses[toast.tone]}`}
           >
             <span>{toast.message}</span>
             <button
