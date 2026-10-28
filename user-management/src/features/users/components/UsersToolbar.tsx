@@ -40,41 +40,44 @@ export function UsersToolbar({
   action,
 }: UsersToolbarProps) {
   return (
-    <div role="search" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr]">
-      <SearchBox value={state.q} onChange={onSearch} />
-      <SelectField
-        label="Role"
-        options={roleOptions}
-        placeholder="All roles"
-        value={state.role ?? ''}
-        onChange={(event) => {
-          const { value } = event.target
-          onRoleChange(isOneOf(USER_ROLES, value) ? value : undefined)
-        }}
-      />
-      <SelectField
-        label="Status"
-        options={statusOptions}
-        placeholder="All statuses"
-        value={state.status ?? ''}
-        onChange={(event) => {
-          const { value } = event.target
-          onStatusChange(isOneOf(USER_STATUSES, value) ? value : undefined)
-        }}
-      />
-      <SelectField
-        label="Sort by"
-        options={sortOptions}
-        value={`${state.sort}:${state.order}`}
-        onChange={(event) => {
-          const [sort, order] = (event.target.value as SortValue).split(':') as [
-            UsersSortField,
-            SortOrder,
-          ]
-          onSortChange(sort, order)
-        }}
-      />
-      {action && <div className="flex justify-end sm:col-span-2 lg:col-span-4">{action}</div>}
+    <div className="space-y-3">
+      <div role="search" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr]">
+        <SearchBox value={state.q} onChange={onSearch} />
+        <SelectField
+          label="Role"
+          options={roleOptions}
+          placeholder="All roles"
+          value={state.role ?? ''}
+          onChange={(event) => {
+            const { value } = event.target
+            onRoleChange(isOneOf(USER_ROLES, value) ? value : undefined)
+          }}
+        />
+        <SelectField
+          label="Status"
+          options={statusOptions}
+          placeholder="All statuses"
+          value={state.status ?? ''}
+          onChange={(event) => {
+            const { value } = event.target
+            onStatusChange(isOneOf(USER_STATUSES, value) ? value : undefined)
+          }}
+        />
+        <SelectField
+          label="Sort by"
+          options={sortOptions}
+          value={`${state.sort}:${state.order}`}
+          onChange={(event) => {
+            const [sort, order] = (event.target.value as SortValue).split(':') as [
+              UsersSortField,
+              SortOrder,
+            ]
+            onSortChange(sort, order)
+          }}
+        />
+      </div>
+      {/* Outside the search landmark: the action is not a search control. */}
+      {action && <div className="flex justify-end">{action}</div>}
     </div>
   )
 }

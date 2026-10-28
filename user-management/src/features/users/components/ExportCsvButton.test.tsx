@@ -47,9 +47,10 @@ async function renderLoaded(path = '/users') {
 }
 
 describe('Export CSV button', () => {
-  it('is in the toolbar', async () => {
+  it('is in the toolbar, outside the search landmark', async () => {
     await renderLoaded()
-    expect(screen.getByRole('search')).toContainElement(exportButton())
+    expect(exportButton()).toBeInTheDocument()
+    expect(screen.getByRole('search')).not.toContainElement(exportButton())
   })
 
   it('downloads all users, not only the visible page', async () => {
@@ -177,7 +178,7 @@ describe('Export CSV button', () => {
     await waitFor(() => expect(exportButton()).toHaveAttribute('aria-busy', 'true'))
 
     await user.click(screen.getByRole('link', { name: 'Add user' }))
-    await screen.findByRole('heading', { name: /add user|new user|create user/i })
+    await screen.findByRole('heading', { name: 'Add user' })
     release()
 
     expect(await screen.findByText('Export failed')).toBeInTheDocument()

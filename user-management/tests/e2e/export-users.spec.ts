@@ -22,9 +22,10 @@ test('F8: export the filtered users and read the downloaded file', async ({ page
   const rows = lines.slice(1, -1)
   expect(rows.length).toBeGreaterThan(0)
   expect(rows.every((row) => row.includes(',editor,'))).toBe(true)
-  // Sorted by last name, ascending.
+  // Sorted by last name, ascending, with the collator the list uses (case and accent blind).
+  const collator = new Intl.Collator('en', { sensitivity: 'base' })
   const lastNames = rows.map((row) => row.split(',')[1]!)
-  expect(lastNames).toEqual([...lastNames].sort((a, b) => a.localeCompare(b)))
+  expect(lastNames).toEqual([...lastNames].sort(collator.compare))
 })
 
 test('F8: the disabled button explains itself and the toolbar fits at 375 px', async ({ page }) => {
