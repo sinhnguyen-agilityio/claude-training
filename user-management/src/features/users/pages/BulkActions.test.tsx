@@ -303,6 +303,19 @@ describe('Bulk failures', () => {
     expect(screen.getByText('1 selected')).toBeInTheDocument()
   })
 
+  it('refreshes the list after a lost response, so users deleted meanwhile leave the selection', async () => {
+    server.use(http.post('/api/users/bulk', () => HttpResponse.error()))
+    const { user } = await renderList()
+    await select(user, 'Ben Wright', 'Grace Taylor')
+    await fetch(new URL(`/api/users/${ben.id}`, location.origin), { method: 'DELETE' })
+
+    await user.click(screen.getByRole('button', { name: 'Set active' }))
+
+    await waitFor(() => expect(notifications()).toHaveTextContent('Could not update 2 users'))
+    await waitFor(() => expect(screen.getByText('1 selected')).toBeInTheDocument())
+    expect(screen.queryByRole('checkbox', { name: 'Select Ben Wright' })).not.toBeInTheDocument()
+  })
+
   it('clears the selection and focuses the heading when every id is already gone', async () => {
     const { user } = await renderList()
     await select(user, 'Ben Wright', 'Grace Taylor')

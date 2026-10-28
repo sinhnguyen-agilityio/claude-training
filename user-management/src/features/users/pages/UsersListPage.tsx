@@ -100,6 +100,9 @@ export function UsersListPage() {
     try {
       result = await bulk.mutateAsync(request)
     } catch (error) {
+      // The response may have been lost after the server applied the change, so refresh the
+      // lists: selected users that no longer exist drop out of the selection.
+      void queryClient.invalidateQueries({ queryKey: userKeys.lists() })
       showToast(
         isApiError(error) && error.status === 0 ? `${failure}. ${error.message}` : failure,
         'error',
