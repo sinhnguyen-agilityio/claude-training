@@ -2,7 +2,7 @@ import { delay, http, HttpResponse } from 'msw'
 import type { z } from 'zod'
 import type { ApiErrorBody } from '@/features/users/api/client'
 import { bulkRequestSchema, type BulkResult } from '@/features/users/bulkSchema'
-import { usersQuerySchema } from '@/features/users/query'
+import { usersExportQuerySchema, usersQuerySchema } from '@/features/users/query'
 import { userCreateSchema, userUpdateSchema } from '@/features/users/schema'
 import { EmailTakenError, type UserRepository } from '@/mocks/repository'
 
@@ -29,6 +29,15 @@ export function createHandlers(
       const query = usersQuerySchema.safeParse(params)
       if (!query.success) return validationError('Invalid query parameters', query.error)
       return HttpResponse.json(repository.list(query.data))
+    }),
+
+    // Registered before `/api/users/:id`, which would otherwise capture "export" as an id.
+    http.get('/api/users/export', async ({ request }) => {
+      await latency()
+      const params = Object.fromEntries(new URL(request.url).searchParams)
+      const query = usersExportQuerySchema.safeParse(params)
+      if (!query.success) return validationError('Invalid query parameters', query.error)
+      return HttpResponse.json(repository.listAll(query.data))
     }),
 
     http.get<{ id: string }>('/api/users/:id', async ({ params }) => {

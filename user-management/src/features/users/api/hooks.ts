@@ -1,6 +1,6 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { usersApi } from '@/features/users/api/client'
-import type { UsersQueryInput } from '@/features/users/query'
+import type { UsersExportQueryInput, UsersQueryInput } from '@/features/users/query'
 import type { User, UserUpdate } from '@/features/users/schema'
 
 export const userKeys = {
@@ -18,6 +18,14 @@ export function useUsers(query: UsersQueryInput) {
     queryFn: () => usersApi.list(query),
     placeholderData: keepPreviousData,
   })
+}
+
+/**
+ * Fetches every user matching the filters for the CSV export (SPEC F8). Nothing is cached or
+ * invalidated: the export only reads. A mutation, so that it runs on click and exposes `isPending`.
+ */
+export function useExportUsers() {
+  return useMutation({ mutationFn: (query: UsersExportQueryInput) => usersApi.export(query) })
 }
 
 export function useUser(id: string) {

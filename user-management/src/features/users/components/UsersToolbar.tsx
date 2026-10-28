@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import type { UsersListState } from '@/features/users/hooks/useUsersListParams'
 import { roleOptions, statusOptions } from '@/features/users/labels'
 import type { SortOrder, UsersSortField } from '@/features/users/query'
@@ -22,6 +22,8 @@ export interface UsersToolbarProps {
   onRoleChange: (role: UserRole | undefined) => void
   onStatusChange: (status: UserStatus | undefined) => void
   onSortChange: (sort: UsersSortField, order: SortOrder) => void
+  /** Rendered on its own row below the controls, e.g. the Export CSV button. */
+  action?: ReactNode
 }
 
 function isOneOf<T extends string>(values: readonly T[], value: string): value is T {
@@ -35,42 +37,47 @@ export function UsersToolbar({
   onRoleChange,
   onStatusChange,
   onSortChange,
+  action,
 }: UsersToolbarProps) {
   return (
-    <div role="search" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr]">
-      <SearchBox value={state.q} onChange={onSearch} />
-      <SelectField
-        label="Role"
-        options={roleOptions}
-        placeholder="All roles"
-        value={state.role ?? ''}
-        onChange={(event) => {
-          const { value } = event.target
-          onRoleChange(isOneOf(USER_ROLES, value) ? value : undefined)
-        }}
-      />
-      <SelectField
-        label="Status"
-        options={statusOptions}
-        placeholder="All statuses"
-        value={state.status ?? ''}
-        onChange={(event) => {
-          const { value } = event.target
-          onStatusChange(isOneOf(USER_STATUSES, value) ? value : undefined)
-        }}
-      />
-      <SelectField
-        label="Sort by"
-        options={sortOptions}
-        value={`${state.sort}:${state.order}`}
-        onChange={(event) => {
-          const [sort, order] = (event.target.value as SortValue).split(':') as [
-            UsersSortField,
-            SortOrder,
-          ]
-          onSortChange(sort, order)
-        }}
-      />
+    <div className="space-y-3">
+      <div role="search" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr]">
+        <SearchBox value={state.q} onChange={onSearch} />
+        <SelectField
+          label="Role"
+          options={roleOptions}
+          placeholder="All roles"
+          value={state.role ?? ''}
+          onChange={(event) => {
+            const { value } = event.target
+            onRoleChange(isOneOf(USER_ROLES, value) ? value : undefined)
+          }}
+        />
+        <SelectField
+          label="Status"
+          options={statusOptions}
+          placeholder="All statuses"
+          value={state.status ?? ''}
+          onChange={(event) => {
+            const { value } = event.target
+            onStatusChange(isOneOf(USER_STATUSES, value) ? value : undefined)
+          }}
+        />
+        <SelectField
+          label="Sort by"
+          options={sortOptions}
+          value={`${state.sort}:${state.order}`}
+          onChange={(event) => {
+            const [sort, order] = (event.target.value as SortValue).split(':') as [
+              UsersSortField,
+              SortOrder,
+            ]
+            onSortChange(sort, order)
+          }}
+        />
+      </div>
+      {/* Outside the search landmark: the action is not a search control. */}
+      {action && <div className="flex justify-end">{action}</div>}
     </div>
   )
 }
