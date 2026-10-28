@@ -25,6 +25,10 @@ export interface UserRepository {
   update(id: string, patch: UserUpdate): User | undefined
   /** Returns false when the user does not exist. */
   remove(id: string): boolean
+  /** Removes every listed user with one save. Returns the ids that existed. */
+  removeMany(ids: readonly string[]): string[]
+  /** Applies `patch` to every listed user with one save. Returns the ids that existed. */
+  updateMany(ids: readonly string[], patch: Pick<UserUpdate, 'status'>): string[]
   /** Restores the seed data. */
   reset(): void
 }
@@ -114,6 +118,28 @@ export function createUserRepository({
       if (remaining.length === users.length) return false
       save(remaining)
       return true
+    },
+
+    removeMany(ids) {
+      const users = load()
+      const wanted = new Set(ids)
+      const removed = users.filter((user) => wanted.has(user.id)).map((user) => user.id)
+      if (removed.length > 0) save(users.filter((user) => !wanted.has(user.id)))
+      return removed
+    },
+
+    updateMany(ids, patch) {
+      const users = load()
+      const wanted = new Set(ids)
+      const updatedAt = now().toISOString()
+      const changed: string[] = []
+      const next = users.map((user) => {
+        if (!wanted.has(user.id)) return user
+        changed.push(user.id)
+        return { ...user, ...patch, updatedAt }
+      })
+      if (changed.length > 0) save(next)
+      return changed
     },
 
     reset() {

@@ -88,6 +88,46 @@ test('a11y: form errors and dialogs have no serious violations', async ({ page }
   await expectNoSeriousViolations(page)
 })
 
+test('a11y: selected rows, the action bar and the bulk dialog have no serious violations', async ({
+  page,
+}) => {
+  await page.goto('/users')
+  await page.getByRole('checkbox', { name: 'Select Ben Wright' }).check()
+  await page.getByRole('checkbox', { name: 'Select Grace Taylor' }).check()
+  await expect(page.getByText('2 selected')).toBeVisible()
+  await expectNoSeriousViolations(page)
+
+  await page.getByRole('button', { name: 'Delete', exact: true }).click()
+  await expect(page.getByRole('alertdialog', { name: 'Delete 2 users?' })).toBeVisible()
+  await expectNoSeriousViolations(page)
+})
+
+test('responsive: the bulk action bar wraps and the header stays visible at 375 px', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 375, height: 812 })
+  await page.goto('/users')
+  await page.getByRole('checkbox', { name: 'Select Ben Wright' }).check()
+
+  const buttons = ['Set active', 'Set inactive', 'Delete', 'Clear selection'].map((name) =>
+    page.getByRole('button', { name, exact: true }),
+  )
+  const tops = new Set<number>()
+  for (const button of buttons) {
+    await expect(button).toBeVisible()
+    const box = await button.boundingBox()
+    expect(box!.x + box!.width).toBeLessThanOrEqual(375)
+    tops.add(Math.round(box!.y))
+  }
+  expect(tops.size).toBeGreaterThanOrEqual(2)
+
+  await expect(page.getByRole('checkbox', { name: 'Select all users on this page' })).toBeVisible()
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  )
+  expect(overflow).toBe(0)
+})
+
 test('keyboard: create a user and delete it without a mouse', async ({ page }) => {
   await page.goto('/users')
   await expect(page.getByRole('table', { name: 'Users' })).toBeVisible()

@@ -1,3 +1,4 @@
+import type { BulkRequest, BulkResult } from '@/features/users/bulkSchema'
 import type {
   UsersExport,
   UsersExportQueryInput,
@@ -85,6 +86,9 @@ export const usersApi = {
   },
   remove(id: string) {
     return request<void>(`/api/users/${encodeURIComponent(id)}`, { method: 'DELETE' })
+  },
+  bulk(input: BulkRequest) {
+    return request<BulkResult>('/api/users/bulk', { method: 'POST', json: input })
   },
   reset() {
     return request<void>('/api/reset', { method: 'POST' })

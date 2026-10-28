@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 User Management Dashboard: a React 19 + TypeScript (strict) CRUD app for users, built as a
 training project. There is no backend. An MSW mock REST API runs in the browser in **every**
 build, production included, and persists to `localStorage`. `docs/SPEC.md` is the source of truth
-for the data model (§3), the API contract (§4) and the acceptance criteria for features F1–F6 and F8
+for the data model (§3), the API contract (§4) and the acceptance criteria for features F1–F8
 (§5). Code comments cite it as `SPEC F4`, `SPEC §4` and so on.
 
 ## Commands
@@ -123,5 +123,5 @@ Request flow: page → `features/users/api/hooks.ts` (TanStack Query) → `api/c
   jsdom applies no CSS, so check visual behaviour (hover, computed colors, sizes) only in
   Playwright.
 - Never use `any`, enums or parameter properties in app code.
-- Never add features listed as out of scope in SPEC §7 (auth, a real backend, bulk actions,
-  import, i18n, avatars; CSV export is F8) without an issue that changes the spec.
+- Never add features listed as out of scope in SPEC §7 (auth, a real backend, selecting users
+  across pages, import, i18n, avatars; CSV export is F8) without an issue that changes the spec.

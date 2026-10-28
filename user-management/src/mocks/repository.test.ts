@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { usersQuerySchema, type UsersQueryInput } from '@/features/users/query'
 import { userSchema, type UserCreate } from '@/features/users/schema'
 import {
@@ -183,6 +183,50 @@ describe('remove', () => {
     expect(repository.remove(seedUsers[0]!.id)).toBe(true)
     expect(list().total).toBe(24)
     expect(repository.remove(seedUsers[0]!.id)).toBe(false)
+  })
+})
+
+describe('removeMany and updateMany', () => {
+  const [first, second] = [seedUsers[0]!, seedUsers[1]!]
+
+  it('removes the listed users with a single save and skips unknown ids', () => {
+    repository.ensureSeeded()
+    const save = vi.spyOn(Storage.prototype, 'setItem')
+
+    expect(repository.removeMany([first.id, 'missing', second.id])).toEqual([first.id, second.id])
+
+    expect(save).toHaveBeenCalledTimes(1)
+    expect(list().total).toBe(23)
+    save.mockRestore()
+  })
+
+  it('updates the status and updatedAt of every listed user with a single save', () => {
+    repository.ensureSeeded()
+    const save = vi.spyOn(Storage.prototype, 'setItem')
+
+    // `first` is already active: it still gets a new updatedAt.
+    expect(repository.updateMany([first.id, 'missing', second.id], { status: 'active' })).toEqual([
+      first.id,
+      second.id,
+    ])
+
+    expect(save).toHaveBeenCalledTimes(1)
+    for (const id of [first.id, second.id]) {
+      expect(repository.get(id)).toMatchObject({ status: 'active', updatedAt: NOW.toISOString() })
+    }
+    expect(repository.get(seedUsers[2]!.id)).toEqual(seedUsers[2])
+    save.mockRestore()
+  })
+
+  it('does not write when no listed id exists', () => {
+    repository.ensureSeeded()
+    const save = vi.spyOn(Storage.prototype, 'setItem')
+
+    expect(repository.removeMany(['missing'])).toEqual([])
+    expect(repository.updateMany(['missing'], { status: 'inactive' })).toEqual([])
+
+    expect(save).not.toHaveBeenCalled()
+    save.mockRestore()
   })
 })
 

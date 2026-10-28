@@ -1,6 +1,7 @@
 import { delay, http, HttpResponse } from 'msw'
 import type { z } from 'zod'
 import type { ApiErrorBody } from '@/features/users/api/client'
+import { bulkRequestSchema, type BulkResult } from '@/features/users/bulkSchema'
 import { usersExportQuerySchema, usersQuerySchema } from '@/features/users/query'
 import { userCreateSchema, userUpdateSchema } from '@/features/users/schema'
 import { EmailTakenError, type UserRepository } from '@/mocks/repository'
@@ -71,6 +72,25 @@ export function createHandlers(
     http.delete<{ id: string }>('/api/users/:id', async ({ params }) => {
       await latency()
       return repository.remove(params.id) ? new HttpResponse(null, { status: 204 }) : notFound()
+    }),
+
+    http.post('/api/users/bulk', async ({ request }) => {
+      await latency()
+      const input = bulkRequestSchema.safeParse(await readJson(request))
+      if (!input.success) return validationError('Validation failed', input.error)
+      const { ids } = input.data
+      const done = new Set(
+        input.data.action === 'delete'
+          ? repository.removeMany(ids)
+          : repository.updateMany(ids, { status: input.data.status }),
+      )
+      // The repository only skips ids that match no user, so `not_found` is the one failure
+      // reason today. Give `removeMany`/`updateMany` a per-id result before adding another.
+      const result: BulkResult = {
+        succeeded: ids.filter((id) => done.has(id)),
+        failed: ids.filter((id) => !done.has(id)).map((id) => ({ id, reason: 'not_found' })),
+      }
+      return HttpResponse.json(result)
     }),
 
     http.post('/api/reset', async () => {
