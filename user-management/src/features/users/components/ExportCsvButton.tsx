@@ -13,6 +13,10 @@ export interface ExportCsvButtonProps {
   unavailable: boolean
 }
 
+/** The secondary look without its hover, dimmed. `disabled:` styles do not apply to `aria-disabled`. */
+const UNAVAILABLE_CLASSES =
+  'cursor-not-allowed border border-slate-300 bg-white text-slate-800 opacity-50'
+
 /** Toolbar button that downloads the filtered users as a CSV file (SPEC F8). */
 export function ExportCsvButton({ query, unavailable }: ExportCsvButtonProps) {
   const exportUsers = useExportUsers()
@@ -24,11 +28,17 @@ export function ExportCsvButton({ query, unavailable }: ExportCsvButtonProps) {
     if (unavailable || pending) return
     try {
       const { data } = await exportUsers.mutateAsync(query)
+      if (data.length === 0) {
+        // The list changed since it was fetched: a header-only file would be misleading.
+        showToast('No users to export', 'error')
+        return
+      }
       const blob = new Blob([buildUsersCsv(data)], { type: 'text/csv;charset=utf-8' })
       downloadBlob(blob, usersCsvFilename())
-    } catch {
+    } catch (error) {
       // Awaited rather than passed as a `mutate` callback, which is dropped if the list page
       // unmounts first. Building the file can fail too, and that is also "Export failed".
+      console.error('Export failed', error)
       showToast('Export failed', 'error')
     }
   }
@@ -37,10 +47,12 @@ export function ExportCsvButton({ query, unavailable }: ExportCsvButtonProps) {
     <Tooltip content={unavailable ? 'No users to export' : undefined}>
       {(describedBy) => (
         <Button
+          // `bare` has no hover of its own, so the disabled look cannot lose to the variant's.
+          variant={unavailable ? 'bare' : 'secondary'}
           aria-disabled={unavailable || undefined}
           aria-busy={pending || undefined}
           aria-describedby={unavailable ? describedBy : undefined}
-          className="aria-disabled:cursor-not-allowed aria-disabled:opacity-50 aria-disabled:hover:bg-white"
+          className={unavailable ? UNAVAILABLE_CLASSES : undefined}
           onClick={() => void handleClick()}
         >
           {pending ? 'Exporting…' : 'Export CSV'}

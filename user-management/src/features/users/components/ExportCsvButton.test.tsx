@@ -37,6 +37,18 @@ function readBlob(blob: Blob) {
   })
 }
 
+const ONE_USER = {
+  id: '7b0f6d2e-0000-4000-8000-000000000001',
+  firstName: 'Anna',
+  lastName: 'Lee',
+  email: 'anna@example.com',
+  phone: null,
+  role: 'admin',
+  status: 'active',
+  createdAt: '2026-01-02T03:04:05.000Z',
+  updatedAt: '2026-02-03T04:05:06.000Z',
+}
+
 const exportButton = () => screen.getByRole('button', { name: /^Export CSV|^Exporting/ })
 
 async function renderLoaded(path = '/users') {
@@ -80,7 +92,7 @@ describe('Export CSV button', () => {
     server.use(
       http.get('/api/users/export', ({ request }) => {
         requested = new URL(request.url)
-        return HttpResponse.json({ data: [], total: 0 })
+        return HttpResponse.json({ data: [ONE_USER], total: 1 })
       }),
     )
     const { user } = await renderLoaded('/users?role=viewer&page=2')
@@ -149,7 +161,7 @@ describe('Export CSV button', () => {
       http.get('/api/users/export', async () => {
         requests += 1
         await gate
-        return HttpResponse.json({ data: [], total: 0 })
+        return HttpResponse.json({ data: [ONE_USER], total: 1 })
       }),
     )
     const { user } = await renderLoaded()
@@ -165,6 +177,7 @@ describe('Export CSV button', () => {
   })
 
   it('still toasts "Export failed" when the list page is left before the request fails', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
     let release: () => void = () => {}
     const gate = new Promise<void>((resolve) => (release = resolve))
     server.use(
@@ -185,7 +198,42 @@ describe('Export CSV button', () => {
     expect(downloads).toHaveLength(0)
   })
 
+  it('downloads nothing and says so when the list emptied after it was fetched', async () => {
+    server.use(http.get('/api/users/export', () => HttpResponse.json({ data: [], total: 0 })))
+    const { user } = await renderLoaded()
+    await user.click(exportButton())
+
+    expect(await screen.findByText('No users to export')).toBeInTheDocument()
+    expect(downloads).toHaveLength(0)
+    await waitFor(() => expect(exportButton()).not.toHaveAttribute('aria-busy'))
+  })
+
+  it('logs the cause when the file cannot be generated, and still toasts "Export failed"', async () => {
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => {})
+    URL.createObjectURL = () => {
+      throw new Error('blocked by the browser')
+    }
+    const { user } = await renderLoaded()
+    await user.click(exportButton())
+
+    expect(await screen.findByText('Export failed')).toBeInTheDocument()
+    expect(logged).toHaveBeenCalledWith('Export failed', expect.any(Error))
+    expect(downloads).toHaveLength(0)
+  })
+
+  it('shows the tooltip when the disabled button is tapped', async () => {
+    const { user } = renderRoute('/users?q=nobody-matches-this')
+    await screen.findByText('No users match your filters')
+
+    await user.click(exportButton())
+    expect(screen.getByRole('tooltip')).toHaveTextContent('No users to export')
+
+    await user.click(document.body)
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+  })
+
   it('toasts "Export failed" and downloads nothing when the request fails', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
     server.use(
       http.get('/api/users/export', async () => {
         await delay(0)
