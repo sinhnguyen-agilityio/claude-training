@@ -60,7 +60,7 @@ still 200, and an id that matches no user is reported as `reason: "not_found"`.
 
 - Duplicate ids are removed before processing, and each id appears once in the response.
 - Invalid requests return 400: empty `ids`, more than 50 ids (counted after removing duplicates),
-  an empty or non-string id, an unknown action, or a missing or invalid `status` on `setStatus`.
+  more than 500 entries in `ids` before duplicates are removed, an empty or non-string id, an unknown action, or a missing or invalid `status` on `setStatus`.
 - `setStatus` sets a new `updatedAt` on every user it reaches, even one who already had the status.
 
 Error body: `{ message: string, fieldErrors?: Record<string, string> }`.
@@ -133,7 +133,7 @@ values). `POST /api/reset` restores the seed data. Every mock response has a sma
   and, if the current page becomes empty, the list goes back one page.
 - A partial failure shows a warning toast ("2 of 3 deleted, 1 failed") and keeps the failed rows
   selected, minus any that are no longer in the refreshed list. If every id fails or the request errors, an error toast ("Could not delete 3 users")
-  shows and the selection is kept.
+  shows and the selection is kept, minus any that are no longer in the refreshed list.
 - While a request runs the actions and checkboxes are disabled, but paging and filters stay
   usable. If the view changes meanwhile, the request still finishes with its toast and a refresh,
   and the selection stays cleared.

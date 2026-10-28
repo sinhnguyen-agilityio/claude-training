@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router'
 import { isApiError } from '@/features/users/api/client'
 import { useBulkUsers, userKeys, useUsers } from '@/features/users/api/hooks'
@@ -46,7 +46,9 @@ export function UsersListPage() {
   // (SPEC F7). It is reset during render, so a request that finishes later cannot bring it back.
   const viewKey = JSON.stringify(query)
   const viewKeyRef = useRef(viewKey)
-  useEffect(() => {
+  // A layout effect, so the ref is current as soon as the new view is committed: no request can
+  // resolve between the commit and the update.
+  useLayoutEffect(() => {
     viewKeyRef.current = viewKey
   }, [viewKey])
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set())
@@ -65,6 +67,9 @@ export function UsersListPage() {
     [data, selected],
   )
   const selectedOnPage = useMemo(() => new Set(selectedIds), [selectedIds])
+  // The rows behind an open dialog can vanish (a refetch after a change elsewhere): close it
+  // instead of offering to delete 0 users.
+  if (confirmingDelete && selectedIds.length === 0) setConfirmingDelete(false)
 
   // Once the action bar is gone after an action, keyboard focus would be lost with it.
   useEffect(() => {
@@ -105,14 +110,14 @@ export function UsersListPage() {
     const { succeeded, failed } = result
     if (succeeded.length === 0) {
       showToast(failure, 'error')
-      return
+    } else {
+      showToast(
+        failed.length === 0
+          ? `${usersLabel(total)} ${verb}`
+          : `${succeeded.length} of ${total} ${verb}, ${failed.length} failed`,
+        failed.length === 0 ? 'success' : 'warning',
+      )
     }
-    showToast(
-      failed.length === 0
-        ? `${usersLabel(total)} ${verb}`
-        : `${succeeded.length} of ${total} ${verb}, ${failed.length} failed`,
-      failed.length === 0 ? 'success' : 'warning',
-    )
 
     // The user moved on while the request ran: the selection stays cleared (SPEC F7).
     if (viewKeyRef.current !== startedOn) return

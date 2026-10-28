@@ -4,6 +4,9 @@ import { USER_STATUSES } from '@/features/users/schema'
 /** Most ids one bulk request may carry, counted after duplicates are removed (SPEC F7). */
 export const MAX_BULK_IDS = 50
 
+/** Most entries a request body may carry before duplicates are removed (SPEC F7). */
+export const MAX_BULK_ENTRIES = 500
+
 /**
  * Ids are plain non-empty strings, not UUIDs: a well-formed id that matches no user is reported
  * as `not_found` in the response, not rejected with a 400.
@@ -12,6 +15,7 @@ const idsSchema = z
   .array(z.string({ error: 'Each id must be a string' }).min(1, 'Each id must not be empty'), {
     error: 'ids must be an array',
   })
+  .max(MAX_BULK_ENTRIES, `At most ${MAX_BULK_ENTRIES} ids per request`)
   .transform((ids) => [...new Set(ids)])
   .pipe(
     z
@@ -34,7 +38,8 @@ export const bulkRequestSchema = z.discriminatedUnion(
   { error: 'Unknown action' },
 )
 
-export type BulkRequest = z.output<typeof bulkRequestSchema>
+/** The wire shape (before duplicates are removed), which is what a client sends. */
+export type BulkRequest = z.input<typeof bulkRequestSchema>
 
 export interface BulkFailure {
   id: string

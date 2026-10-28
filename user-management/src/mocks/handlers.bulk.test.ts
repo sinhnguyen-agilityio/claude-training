@@ -57,6 +57,13 @@ describe('POST /api/users/bulk', () => {
     expect((await bulk({ action: 'delete', ids: [...ids, 'one-more'] })).status).toBe(400)
   })
 
+  it('caps the entries before removing duplicates, so a body cannot be inflated', async () => {
+    expect((await bulk({ action: 'delete', ids: Array(500).fill('same') })).status).toBe(200)
+    const response = await bulk({ action: 'delete', ids: Array(501).fill('same') })
+    expect(response.status).toBe(400)
+    expect((await response.json()).fieldErrors).toHaveProperty('ids')
+  })
+
   it.each([
     ['empty ids', { action: 'delete', ids: [] }, 'ids'],
     ['missing ids', { action: 'delete' }, 'ids'],

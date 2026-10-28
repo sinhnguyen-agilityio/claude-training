@@ -75,6 +75,8 @@ export function createHandlers(
           ? repository.removeMany(ids)
           : repository.updateMany(ids, { status: input.data.status }),
       )
+      // The repository only skips ids that match no user, so `not_found` is the one failure
+      // reason today. Give `removeMany`/`updateMany` a per-id result before adding another.
       const result: BulkResult = {
         succeeded: ids.filter((id) => done.has(id)),
         failed: ids.filter((id) => !done.has(id)).map((id) => ({ id, reason: 'not_found' })),

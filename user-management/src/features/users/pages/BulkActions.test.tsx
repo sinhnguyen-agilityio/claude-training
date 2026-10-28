@@ -303,6 +303,20 @@ describe('Bulk failures', () => {
     expect(screen.getByText('1 selected')).toBeInTheDocument()
   })
 
+  it('clears the selection and focuses the heading when every id is already gone', async () => {
+    const { user } = await renderList()
+    await select(user, 'Ben Wright', 'Grace Taylor')
+    for (const { id } of [ben, seedUsers[23]!]) {
+      await fetch(new URL(`/api/users/${id}`, location.origin), { method: 'DELETE' })
+    }
+
+    await user.click(screen.getByRole('button', { name: 'Set active' }))
+
+    await waitFor(() => expect(notifications()).toHaveTextContent('Could not update 2 users'))
+    await waitFor(() => expect(screen.queryByText('2 selected')).not.toBeInTheDocument())
+    await waitFor(() => expect(heading()).toHaveFocus())
+  })
+
   it.each([
     ['a server error', () => HttpResponse.json({ message: 'Boom' }, { status: 500 })],
     ['a network failure', () => HttpResponse.error()],
@@ -392,6 +406,20 @@ describe('Bulk selection stays consistent with the list', () => {
 
     await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument())
     expect(requests).toBe(0)
+  })
+
+  it('closes an open delete dialog when the selected users leave the page', async () => {
+    const { user, queryClient } = await renderList()
+    await select(user, 'Ben Wright')
+    await user.click(screen.getByRole('button', { name: 'Delete' }))
+    expect(screen.getByRole('alertdialog', { name: 'Delete 1 user?' })).toBeInTheDocument()
+
+    await fetch(new URL(`/api/users/${ben.id}`, location.origin), { method: 'DELETE' })
+    await act(() => queryClient.invalidateQueries({ queryKey: userKeys.lists() }))
+
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument())
+    await user.click(rowBox(nextName))
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
   })
 
   it('drops selected users that left the page for other reasons', async () => {
