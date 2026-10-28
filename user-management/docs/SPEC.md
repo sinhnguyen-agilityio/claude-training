@@ -128,8 +128,8 @@ values). `POST /api/reset` restores the seed data. Every mock response has a sma
   doubled.
 - **Given** a cell starts with `=`, `+`, `-`, `@`, a tab or CR **Then** it is prefixed with a
   single quote `'`, in every column. **Exception:** a phone matching `^\+[0-9]+( [0-9]+)*$` is
-  written as is. The exception stays only if phone cells display as their text in desktop Excel
-  for Windows (Microsoft 365) and Google Sheets (checked manually before merge).
+  written as is. The exception stays only if phone cells display as their text in Google Sheets
+  (checked manually before merge).
 - **Given** the list has no results, is loading, or is in its error state **Then** the button is
   `aria-disabled` (still focusable), clicking does nothing, and its tooltip reads "No users to
   export".
