@@ -9,18 +9,13 @@ case "$branch" in
     ;;
 esac
 
-# Husky runs hooks from the repo root. Each project owns its checks and
-# runs only when it has staged files.
+# Run each check only when its files are staged.
 staged=$(git diff --cached --name-only)
 
-if echo "$staged" | grep -q '^user-management/'; then
-  (cd user-management && pnpm exec lint-staged)
+if echo "$staged" | grep -q -v '^\.claude/'; then
+  pnpm exec lint-staged --max-arg-length 4000
 fi
 
-if echo "$staged" | grep -q '^mcp/'; then
-  sh mcp/pre-commit.sh
-fi
-
-if echo "$staged" | grep -q '^\(\.claude\|user-management/\.claude\)/'; then
+if echo "$staged" | grep -q '^\.claude/'; then
   node --test .claude/hooks/*.test.mjs
 fi

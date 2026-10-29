@@ -27,7 +27,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node -e \"Promise.resolve().then(()=>import(require('url').pathToFileURL(require('path').join(process.env.CLAUDE_PROJECT_DIR,process.argv[1])).href)).catch(e=>{console.error('Hook error ('+process.argv[1]+'): '+e.message);process.exit(+process.argv[2])})\" .claude/hooks/prettier-user-management.mjs 1"
+            "command": "node -e \"Promise.resolve().then(()=>import(require('url').pathToFileURL(require('path').join(process.env.CLAUDE_PROJECT_DIR,process.argv[1])).href)).catch(e=>{console.error('Hook error ('+process.argv[1]+'): '+e.message);process.exit(+process.argv[2])})\" .claude/hooks/format-on-edit.mjs 1"
           }
         ]
       }

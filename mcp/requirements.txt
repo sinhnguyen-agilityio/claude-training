@@ -1,3 +1,0 @@
-mcp == 2.3.0
-pydantic
-scikit-learn

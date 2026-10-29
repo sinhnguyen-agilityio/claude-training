@@ -26,8 +26,8 @@ branch before asking for review, or of a partner's PR/MR. It reviews **one chang
    - Branch: `git diff main...<branch>` and `git log --oneline main..<branch>`.
    - PR/MR: read the title, description and diff through the GitHub or GitLab tools if they are
      available. Otherwise fetch the source branch and diff it locally.
-3. Read `WORKFLOW.md` and the `CLAUDE.md` of every project the diff touches (for example
-   `user-management/CLAUDE.md`). **Project rules beat generic advice.**
+3. Read `WORKFLOW.md` and `CLAUDE.md`, plus `docs/architecture.md` and `docs/testing.md` when the diff
+   touches the API layer or tests. **Project rules beat generic advice.**
 4. Read each changed file in full, not only the hunks. Trace callers with Grep when a finding
    depends on how the code is used.
 
@@ -41,7 +41,7 @@ Do not skip ahead. A correctness bug matters more than a naming nit, so the orde
   missing, invalid, duplicate, very long, concurrent, and network-failure inputs.
 - Error handling: errors are surfaced to the user or caller, never swallowed.
 - State and async: stale closures, missing cleanup of listeners and timers, race conditions,
-  cache invalidation (`userKeys` in user-management).
+  cache invalidation (`userKeys`).
 - Shell scripts: quoting, exit codes, behaviour on Windows (Git Bash) as well as Linux CI.
 - Validation rules changed on **both** sides: `schema.ts` / `query.ts` are shared by the form and
   the mock API, so they must not be edited in only one place.
@@ -49,7 +49,7 @@ Do not skip ahead. A correctness bug matters more than a naming nit, so the orde
 ### 2) Tests
 
 - New behaviour has tests, and a bug fix starts with a test that failed before the fix.
-- Tests check behaviour, not implementation. In user-management: pages and routes are rendered
+- Tests check behaviour, not implementation. Pages and routes are rendered
   with `renderRoute()`, network goes through the MSW node server with `server.use(...)`, and
   TanStack Query hooks and `fetch` are never mocked.
 - No fixed sleeps (`setTimeout`, `waitForTimeout`). Tests wait for content, or use fake timers.
@@ -60,14 +60,14 @@ Do not skip ahead. A correctness bug matters more than a naming nit, so the orde
 ### 3) Readability
 
 - Names say what things are. Functions do one thing. Early returns over deep nesting.
-- Comments explain *why*, match the code, and cite the SPEC where relevant (`SPEC F4`, `SPEC §4`).
+- Comments explain _why_, match the code, and cite the SPEC where relevant (`SPEC F4`, `SPEC §4`).
 - Matches the surrounding code: `@/` imports, no `any`, enums or parameter properties.
 - No dead code, commented-out code, debug logging or leftover TODOs without an issue.
 
 ### 4) Security basics
 
 - No secrets, tokens or credentials in code, config, tests or logs.
-- External input is validated at the boundary (Zod schemas in user-management).
+- External input is validated at the boundary (Zod schemas).
 - No unsafe HTML (`dangerouslySetInnerHTML`), `eval`, or string-built shell commands from
   untrusted input. Hooks and scripts that run automatically on developer machines get extra care.
 - Error messages don't leak internals. Dependencies added are justified and from trusted sources.
@@ -96,15 +96,16 @@ Do not skip ahead. A correctness bug matters more than a naming nit, so the orde
 ```markdown
 ## Review: <PR/branch title>
 
-**Scope reviewed:** <files / commits>  ·  **Checks run:** <commands and results, or "not run">
+**Scope reviewed:** <files / commits> · **Checks run:** <commands and results, or "not run">
 
-| # | Area | Severity | Location | Comment |
-|---|------|----------|----------|---------|
-| 1 | Correctness | blocker | `path/file.ts:42` | <problem> - <why it matters>. **Suggest:** <fix> |
-| 2 | Tests | major | `path/file.test.ts:10` | ... |
-| 3 | Scope | minor | PR description | ... |
+| #   | Area        | Severity | Location               | Comment                                          |
+| --- | ----------- | -------- | ---------------------- | ------------------------------------------------ |
+| 1   | Correctness | blocker  | `path/file.ts:42`      | <problem> - <why it matters>. **Suggest:** <fix> |
+| 2   | Tests       | major    | `path/file.test.ts:10` | ...                                              |
+| 3   | Scope       | minor    | PR description         | ...                                              |
 
 ### Checklist
+
 - [x] Correctness - <one line>
 - [ ] Tests - <what is missing>
 - [x] Readability
@@ -112,5 +113,6 @@ Do not skip ahead. A correctness bug matters more than a naming nit, so the orde
 - [x] Scope
 
 ### Verdict
+
 **Request changes** | **Approve** | **Approve with comments** - <one sentence why>
 ```

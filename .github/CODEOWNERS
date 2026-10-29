@@ -1,0 +1,9 @@
+# Every change needs a review from the owner. Pair this with a branch protection rule on main
+# ("Require review from Code Owners"), which is a GitHub setting and cannot live in the repo.
+* @sinhnguyen-agilityio
+
+# Claude Code rules, CI and workflow files affect every later change, so they are named on purpose.
+/.claude/ @sinhnguyen-agilityio
+/.github/ @sinhnguyen-agilityio
+/CLAUDE.md @sinhnguyen-agilityio
+/WORKFLOW.md @sinhnguyen-agilityio
