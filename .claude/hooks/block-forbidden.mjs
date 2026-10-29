@@ -5,7 +5,7 @@
 // This is an early warning, not the enforcement. It guesses where git will run from the command
 // text, and no text parser can be complete: command substitution and subshells in the middle of a
 // line (`echo $(cd main; git commit)`) are not followed. The protected-branch rule is enforced by
-// the git hooks in user-management/.husky (pre-commit, pre-push), which see the real branch.
+// the git hooks in .husky (pre-commit, pre-push), which see the real branch.
 import { readFileSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 import { resolve } from 'node:path'

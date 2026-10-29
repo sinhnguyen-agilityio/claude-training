@@ -4,3 +4,5 @@ coverage
 playwright-report
 test-results
 public/mockServiceWorker.js
+.claude/hooks
+.github/workflows

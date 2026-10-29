@@ -24,10 +24,10 @@ It writes the pack. It does not create issues, branches or files unless the user
 ## 1. Gather context
 
 1. Read the requirement in full. If it is an issue number, fetch it with the GitHub or GitLab tools.
-2. Read the sources of truth for the project it touches: the spec (`user-management/docs/SPEC.md`),
-   the project `CLAUDE.md`, and `WORKFLOW.md`. **Existing rules beat guesses.** If the spec already
+2. Read the sources of truth: the spec (`docs/SPEC.md`),
+   `CLAUDE.md`, and `WORKFLOW.md`. **Existing rules beat guesses.** If the spec already
    answers a question, do not ask it.
-3. Read `.github/issue_templates/Feature.md` and follow its sections, so the pack can be pasted into
+3. Read `.github/ISSUE_TEMPLATE/feature.md` and follow its sections, so the pack can be pasted into
    an issue unchanged.
 4. Note what the requirement touches that already exists (endpoints, schemas, screens) with Grep.
 
@@ -86,11 +86,11 @@ a sign of thoroughness.
 Before output, read the pack as three people and try to start work. Write down every point where
 you would need to ask something.
 
-| Reader | Can they... |
-|---|---|
+| Reader        | Can they...                                                                              |
+| ------------- | ---------------------------------------------------------------------------------------- |
 | **Developer** | build it with no further question? Is every API, field, string and state change defined? |
-| **Tester** | write a pass/fail test for every AC from the text alone, with exact expected values? |
-| **Client** | recognise their own intent, and see every decision that was made for them? |
+| **Tester**    | write a pass/fail test for every AC from the text alone, with exact expected values?     |
+| **Client**    | recognise their own intent, and see every decision that was made for them?               |
 
 Every gap found becomes either an AC (if you can decide it from the spec) or an open question with a
 default. Then report the score:
@@ -116,27 +116,37 @@ default. Then report the score:
 ```markdown
 # Ticket pack: <requirement title>
 
-**Source:** <message / issue / file>  ·  **Tickets:** <n>  ·  **Verdict:** Ready | Ready with defaults | Not ready
+**Source:** <message / issue / file> · **Tickets:** <n> · **Verdict:** Ready | Ready with defaults | Not ready
 
 ## Ticket 1: <title>
+
 **Story:** As a ..., I want ..., so that ...
 
 ### Background
+
 ### Acceptance criteria
+
 - **AC1** **Given** ... **When** ... **Then** ...
+
 ### Out of scope
+
 ### Test plan
+
 - [ ] Unit / component: AC1, AC2
 - [ ] E2E: AC1, AC3
+
 ### Definition of done
+
 ### Dependencies
 
 ## Open questions
-| ID | Priority | Question | Why it matters | Default if unanswered | Blocks |
-|----|----------|----------|----------------|-----------------------|--------|
+
+| ID  | Priority | Question | Why it matters | Default if unanswered | Blocks |
+| --- | -------- | -------- | -------------- | --------------------- | ------ |
 
 ## Zero-questions test
-Gaps found and fixed: <n>  ·  Open questions: <n> (Blocker <a>, High <b>, Medium <c>, Low <d>)
+
+Gaps found and fixed: <n> · Open questions: <n> (Blocker <a>, High <b>, Medium <c>, Low <d>)
 ```
 
 Write the pack in the language of the issue tracker (English for GitHub issues in this repo),

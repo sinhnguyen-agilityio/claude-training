@@ -9,7 +9,7 @@ import { after, describe, test } from 'node:test'
 import assert from 'node:assert/strict'
 import { fileURLToPath } from 'node:url'
 
-const husky = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'user-management', '.husky')
+const husky = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '.husky')
 
 // Inside a git hook (the husky pre-commit) git exports GIT_INDEX_FILE and friends, which would
 // point the throwaway repos at the real one. Drop them from every child process.
