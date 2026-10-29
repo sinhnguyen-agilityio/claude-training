@@ -1,13 +1,12 @@
 # Claude Code Training
 
 A training repository for learning to build software with [Claude Code](https://claude.com/claude-code).
-It holds two small, independent projects plus the Claude Code configuration (hooks and skills)
-used while working on them.
+It holds one small project plus the Claude Code configuration (hooks and skills) used while
+working on it.
 
 | Folder                               | What it is                                                             |
 | ------------------------------------ | ---------------------------------------------------------------------- |
 | [user-management/](user-management/) | Main project: a React + TypeScript CRUD app for managing users         |
-| [mcp/](mcp/)                         | Side project: a minimal Model Context Protocol (MCP) server and client |
 | [.claude/](.claude/)                 | Shared Claude Code settings, hooks and skills for the whole repository |
 | [.github/](.github/)                 | CI workflow and issue templates (Feature, Bug)                         |
 
@@ -19,7 +18,6 @@ used while working on them.
 - Write tests first for bugs, and keep unit, component and E2E coverage healthy (80% threshold).
 - Teach Claude Code the project's rules through `CLAUDE.md`, hooks and skills instead of repeating
   them in every prompt.
-- Learn how MCP works end to end: tools, resources and prompts.
 
 ## Getting started
 
@@ -39,23 +37,6 @@ Open <http://localhost:5173>. There is no backend: a mock REST API (MSW) runs in
 stores data in `localStorage`. See [user-management/README.md](user-management/README.md) for the
 scripts, project structure and workflow.
 
-### MCP demo
-
-Prerequisites: **Python 3.10+** (required by `mcp` 2.x). Use a virtualenv so the dependencies stay out
-of your global Python.
-
-```bash
-cd mcp                       # from the repository root
-python -m venv .venv         # skip if .venv already exists
-source .venv/bin/activate    # Git Bash on Windows: source .venv/Scripts/activate
-                             # PowerShell: .venv\Scripts\Activate.ps1
-pip install -r requirements.txt -r requirements-dev.txt   # dev file adds ruff, used by the pre-commit hook
-python client.py
-```
-
-The client starts the server itself, so one terminal is enough. See [mcp/README.md](mcp/README.md)
-for details.
-
 ## Working with Claude Code
 
 Run `claude` from the repository root. It picks up the configuration below automatically. The
@@ -65,8 +46,7 @@ only registered at the root.
 ### Project instructions
 
 - [user-management/CLAUDE.md](user-management/CLAUDE.md): commands, architecture, testing rules and
-  the "never do" list for the app. Claude loads it when working under `user-management/`. There is
-  no instruction file for `mcp/`; see [mcp/README.md](mcp/README.md).
+  the "never do" list for the app. Claude loads it when working under `user-management/`.
 
 ### Hooks
 
@@ -90,6 +70,7 @@ Defined in [.claude/skills/](.claude/skills/):
 | Skill                                                                      | Use it to                                                |
 | -------------------------------------------------------------------------- | -------------------------------------------------------- |
 | [how-we-write-migrations](.claude/skills/how-we-write-migrations/SKILL.md) | Create and review safe database migrations               |
+| [ticket-pack](.claude/skills/ticket-pack/SKILL.md)                         | Turn a requirement into a ticket pack (`/ticket-pack`)   |
 | [release-checklist](.claude/skills/release-checklist/SKILL.md)             | Run a final check before shipping (`/release-checklist`) |
 | [review-checklist](.claude/skills/review-checklist/SKILL.md)               | Review a PR or branch (`/review-checklist 2`)            |
 
@@ -115,7 +96,6 @@ checks.
 ├── .claude/          # Claude Code settings, hooks and skills
 ├── .github/          # CI workflow and issue templates
 ├── WORKFLOW.md       # Team workflow: issue, branch, commit, PR, checks
-├── mcp/              # MCP server + client demo (Python)
 └── user-management/  # User Management Dashboard (React + TypeScript)
     ├── docs/         # SPEC.md: data model, API contract, acceptance criteria
     ├── src/          # App code (app, features, mocks, shared, test)

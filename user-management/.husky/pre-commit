@@ -17,10 +17,6 @@ if echo "$staged" | grep -q '^user-management/'; then
   (cd user-management && pnpm exec lint-staged)
 fi
 
-if echo "$staged" | grep -q '^mcp/'; then
-  sh mcp/pre-commit.sh
-fi
-
 if echo "$staged" | grep -q '^\(\.claude\|user-management/\.claude\)/'; then
   node --test .claude/hooks/*.test.mjs
 fi

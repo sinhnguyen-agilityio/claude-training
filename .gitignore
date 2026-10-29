@@ -32,15 +32,6 @@ blob-report
 # Playwright MCP snapshots and logs
 .playwright-mcp/
 
-# Python
-__pycache__/
-*.py[cod]
-*.egg-info/
-.mypy_cache/
-.ruff_cache/
-.pytest_cache/
-.venv/
-venv/
 .env
 .env.*
 !.env.example

@@ -1,8 +1,8 @@
 ---
 name: how-we-write-migrations
 description: Create and review safe database migrations. Use when changing schemas, migrating data, or troubleshooting migration failures.
-allowed-tools: Read, Grep, Glob, Bash
-model: sonnet
+tools: Read, Grep, Glob, Bash
+user-invocable: true
 ---
 
 # How we write migrations
