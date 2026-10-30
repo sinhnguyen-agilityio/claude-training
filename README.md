@@ -118,7 +118,7 @@ change history is in [CHANGELOG.md](CHANGELOG.md); longer notes per feature are 
 ```text
 .
 ├── .claude/          # Claude Code settings, hooks, skills and subagents
-├── .github/          # CI, Dependabot, CODEOWNERS, issue and PR templates (GitHub)
+├── .github/          # CI, CODEOWNERS, issue and PR templates (GitHub)
 ├── .gitlab/          # Issue and MR templates (GitLab copy)
 ├── .husky/           # Git hooks: pre-commit and pre-push
 ├── docs/             # SPEC.md, architecture, testing, release notes
