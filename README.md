@@ -8,6 +8,10 @@ about. There is no backend; data comes from a mock REST API ([MSW](https://mswjs
 
 The full spec and acceptance criteria are in [docs/SPEC.md](docs/SPEC.md).
 
+**Live demo:** <https://sinhnguyen-agilityio.github.io/claude-training/>. It shows the latest `main`
+and is deployed after CI passes. Data is kept in your browser's `localStorage`, so each visitor
+has their own copy.
+
 ## Tech stack
 
 React 19 · TypeScript (strict) · Vite · React Router · TanStack Query · React Hook Form + Zod ·
@@ -39,6 +43,23 @@ Open <http://localhost:5173>. For E2E tests, install the browser once:
 ```bash
 pnpm exec playwright install chromium
 ```
+
+## Deploy
+
+[.github/workflows/deploy.yml](.github/workflows/deploy.yml) publishes `main` to GitHub Pages
+after the CI workflow passes on it (or when run by hand from the Actions tab). Pages serves the app
+under `/claude-training/`, so that workflow builds with `BASE_PATH=/claude-training/`. Every other
+build, E2E included, uses `/`. To try the Pages build locally:
+
+```bash
+BASE_PATH=/claude-training/ pnpm build
+BASE_PATH=/claude-training/ pnpm preview   # http://localhost:4173/claude-training/
+```
+
+In Git Bash on Windows, prefix both with `MSYS_NO_PATHCONV=1`. Otherwise Git Bash rewrites
+`/claude-training/` into a Windows path.
+
+Setting it up once: **Settings → Pages → Source: GitHub Actions**.
 
 ## Scripts
 
@@ -81,15 +102,23 @@ other two only report an error.
 
 ### Skills
 
-Defined in [.claude/skills/](.claude/skills/). Each one is also a slash command.
+Defined in [.claude/skills/](.claude/skills/). Each one is also a slash command. The issue and PR
+formats live in `ticket-pack`, `bug-report` and `pr-description`; there are no template files. The
+order they run in is in [WORKFLOW.md](WORKFLOW.md).
 
-| Skill                                                          | Use it to                                                  |
-| -------------------------------------------------------------- | ---------------------------------------------------------- |
-| [ticket-pack](.claude/skills/ticket-pack/SKILL.md)             | Turn a requirement into a ticket pack (`/ticket-pack`)     |
-| [bug-report](.claude/skills/bug-report/SKILL.md)               | Turn a rough description into a bug report (`/bug-report`) |
-| [pr-description](.claude/skills/pr-description/SKILL.md)       | Draft a PR/MR description (`/pr-description`)              |
-| [review-checklist](.claude/skills/review-checklist/SKILL.md)   | Review a PR or branch (`/review-checklist 2`)              |
-| [release-checklist](.claude/skills/release-checklist/SKILL.md) | Run a final check before shipping (`/release-checklist`)   |
+| Skill                                                          | Use it to                                                                             |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| [ticket-pack](.claude/skills/ticket-pack/SKILL.md)             | Turn a requirement into a ticket pack; owns the Feature format (`/ticket-pack`)       |
+| [bug-report](.claude/skills/bug-report/SKILL.md)               | Turn a rough description into a bug report; owns the Bug format (`/bug-report`)       |
+| [start-ticket](.claude/skills/start-ticket/SKILL.md)           | Clarify an issue, record assumptions, branch and plan it (`/start-ticket #12`)        |
+| [ship](.claude/skills/ship/SKILL.md)                           | Run the checks, show the diffs, review, commit, push and open the PR (`/ship`)        |
+| [pr-description](.claude/skills/pr-description/SKILL.md)       | Draft a PR/MR description; owns the PR format (`/pr-description`)                     |
+| [pr-walkthrough](.claude/skills/pr-walkthrough/SKILL.md)       | Publish a reviewer walkthrough page for a PR (`/pr-walkthrough #31`)                  |
+| [triage-review](.claude/skills/triage-review/SKILL.md)         | Answer review comments with fix, leave or ask why (`/triage-review #31`)              |
+| [review-checklist](.claude/skills/review-checklist/SKILL.md)   | Review a PR or branch (`/review-checklist 2`)                                         |
+| [release-checklist](.claude/skills/release-checklist/SKILL.md) | Check main, then open the release PR and tag the version (`/release-checklist 1.1.0`) |
+
+[loop.md](loop.md) is the prompt for watching an open PR: `/loop 5m follow loop.md for PR #<n>`.
 
 ### Subagents
 
@@ -100,7 +129,7 @@ Defined in [.claude/agents/](.claude/agents/):
 | [code-explorer](.claude/agents/code-explorer.md)       | Explore an unfamiliar area without filling the main session      |
 | [test-spec-writer](.claude/agents/test-spec-writer.md) | Turn acceptance criteria into a test matrix and Playwright specs |
 
-### Hook and template tests
+### Hook and skill tests
 
 ```bash
 node --test .claude/hooks/*.test.mjs   # needs `pnpm install` first
@@ -118,13 +147,13 @@ change history is in [CHANGELOG.md](CHANGELOG.md); longer notes per feature are 
 ```text
 .
 ├── .claude/          # Claude Code settings, hooks, skills and subagents
-├── .github/          # CI, CODEOWNERS, issue and PR templates (GitHub)
-├── .gitlab/          # Issue and MR templates (GitLab copy)
+├── .github/          # CI and Claude workflows, CODEOWNERS
 ├── .husky/           # Git hooks: pre-commit and pre-push
 ├── docs/             # SPEC.md, architecture, testing, release notes
 ├── src/              # App code (app, features, mocks, shared, test)
 ├── tests/e2e/        # Playwright specs
 ├── CHANGELOG.md
 ├── CLAUDE.md
+├── loop.md           # /loop prompt for watching an open PR
 └── WORKFLOW.md
 ```

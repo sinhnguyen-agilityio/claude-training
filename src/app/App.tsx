@@ -5,7 +5,10 @@ import { createQueryClient } from '@/app/queryClient'
 import { routes } from '@/app/routes'
 import { ToastProvider } from '@/shared/ui/ToastProvider'
 
-const router = createBrowserRouter(routes)
+// BASE_URL is Vite's `base` ('/' or e.g. '/claude-training/'); React Router wants no trailing slash.
+const router = createBrowserRouter(routes, {
+  basename: import.meta.env.BASE_URL.replace(/\/$/, '') || '/',
+})
 
 export function App() {
   const [queryClient] = useState(createQueryClient)

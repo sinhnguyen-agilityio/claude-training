@@ -23,6 +23,7 @@ pnpm format              # prettier --write .   (format:check to verify)
 pnpm test                # vitest run (unit/component, jsdom)
 pnpm test:coverage       # enforces an 80% threshold on lines/statements/functions/branches
 pnpm e2e                 # Playwright: builds, serves the production build on :4173, runs tests/e2e
+E2E_PORT=4174 pnpm e2e   # another port, so two worktrees can run E2E at the same time
 
 # Single tests
 pnpm vitest run src/features/users/pages/DeleteUser.test.tsx
@@ -36,7 +37,10 @@ are in the Workflow section below.
 
 ## Workflow
 
-The team workflow is followed for every change:
+The team workflow is followed for every change. Each stage has a skill: `/start-ticket` (clarify,
+branch, plan), `/ship` (checks, diff, review, commit, PR), `/pr-walkthrough`, `/triage-review`, and
+`/loop 5m follow loop.md for PR #<n>` to watch the PR. The issue and PR formats live in
+`ticket-pack`, `bug-report` and `pr-description`.
 
 @WORKFLOW.md
 

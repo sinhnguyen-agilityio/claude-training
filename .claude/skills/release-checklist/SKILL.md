@@ -1,156 +1,109 @@
 ---
 name: release-checklist
-description: Run a final release checklist before shipping. Verifies no TODOs, no debug code, docs updated, tests passing, dependencies justified, and security reviewed.
-tools: Read, Grep, Glob, Bash
+description: Gate a release of this repo - check main, run every check, verify CHANGELOG, release notes and version, then (after asking at each step) open the release PR and push the vX.Y.Z tag. Use when asked to release, cut a version, tag a release or check whether main is ready to ship.
+tools: Read, Grep, Glob, Bash, AskUserQuestion
 user-invocable: true
 ---
 
-# Release Checklist
+# Release checklist
 
-A final quality gate before shipping code. This skill runs through everything a senior developer would check before approving a release.
+Pipeline step 10 in `WORKFLOW.md`. `/review-checklist` reviews one change; this skill checks a
+whole version before it is tagged. Any failure blocks the release.
 
-## Quick Start
+## Usage
 
-```
-/release-checklist
-```
-
-Or specify a scope:
-
-```
-/release-checklist src/auth/
+```text
+/release-checklist 1.1.0
 ```
 
-## The Checklist
+Versions follow semver. Tags are `v<x.y.z>` (e.g. `v1.1.0`). The first tag, `v.1.0.0`, predates
+this convention and is kept as it is.
 
-Run through each section systematically. Any failure blocks the release.
+## 1. Preconditions
 
-### 1. Code Completeness
+Stop at the first one that fails, and name it:
+
+1. `main` is checked out (`git branch --show-current`).
+2. The working tree is clean (`git status --porcelain` prints nothing).
+3. `main` matches GitHub: `git fetch github` and `git rev-parse HEAD` equals
+   `git rev-parse github/main`.
+
+## 2. Checks
+
+Run each one and record pass or fail. Run them all, even after a failure:
 
 ```bash
-# Search for incomplete code markers
-grep -r "TODO\|FIXME\|XXX\|HACK\|WIP" --include="*.ts" --include="*.js" --include="*.py" --include="*.go" --include="*.rs" --include="*.rb" --include="*.ex" src/
+pnpm lint
+pnpm typecheck
+pnpm test:coverage
+pnpm e2e
+node --test .claude/hooks/*.test.mjs
+pnpm audit --prod --audit-level=high
 ```
 
-- [ ] No TODO comments remain
-- [ ] No FIXME markers
-- [ ] No HACK or XXX notes
-- [ ] No WIP (work in progress) code
-- [ ] No placeholder implementations (`throw new Error('Not implemented')`)
-- [ ] No commented-out code that should be removed
+## 3. Content
 
-### 2. Debug Code Removed
+- [ ] `CHANGELOG.md` has entries under `## [Unreleased]`.
+- [ ] Every `F<n>` mentioned under `[Unreleased]` has a `docs/releases/f<n>-*.md`.
+- [ ] `src/` has no `TODO`, `FIXME`, `console.log` or `debugger` outside test files:
+      `git grep -nE "TODO|FIXME|console\.log|debugger" -- src ':!*.test.ts' ':!*.test.tsx'`
+- [ ] The tag `v<x.y.z>` does not exist yet (`git tag -l v<x.y.z>`).
+- [ ] `<x.y.z>` is higher than the latest released version: the highest tag matching `v<x.y.z>`
+      or `v.<x.y.z>`, and the latest `## [x.y.z]` heading in `CHANGELOG.md`.
+- [ ] `package.json` `version` equals the latest released version (it moves to `<x.y.z>` in step 5).
 
-```bash
-# Search for debug statements
-grep -rn "console\.log\|print(\|debugger\|binding\.pry\|byebug\|IEx\.pry" --include="*.ts" --include="*.js" --include="*.py" --include="*.rb" --include="*.ex" src/
-```
+Treat these as warnings, not failures: a new dependency since the last tag (`git diff
+<last tag>..HEAD -- package.json`) with no reason in the CHANGELOG, and README or SPEC not touched
+although `[Unreleased]` lists a new feature.
 
-- [ ] No `console.log` in production code (logging libraries OK)
-- [ ] No hardcoded test data or mock values
-
-### 3. Documentation Updated
-
-- [ ] README reflects current functionality
-- [ ] API documentation matches implementation
-- [ ] CHANGELOG has entries for all changes
-- [ ] Configuration options documented
-- [ ] Breaking changes clearly noted
-- [ ] Migration guide if needed
-
-### 4. Tests Passing
-
-Run all test commands from CLAUDE.md:
-
-```bash
-# Example - adapt to your project
-npm test        # or pytest, go test, etc.
-npm run lint    # or ruff, golangci-lint, etc.
-npm run typecheck  # or mypy, tsc, etc.
-npm run build   # verify it compiles
-```
-
-- [ ] All unit tests pass
-- [ ] All integration tests pass
-- [ ] Lint checks pass (no errors)
-- [ ] Type checks pass (no errors)
-- [ ] Build succeeds
-
-### 5. Dependencies Justified
-
-For any new dependencies added:
-
-- [ ] Each dependency has a clear reason for inclusion
-- [ ] Licenses are compatible (MIT, Apache, BSD, etc.)
-- [ ] Packages are actively maintained
-- [ ] No known security vulnerabilities
-- [ ] Versions are pinned appropriately
-- [ ] Lockfile is committed
-
-```bash
-# Check for outdated or vulnerable packages
-npm audit       # Node.js
-```
-
-### 6. Security Review
-
-- [ ] No hardcoded secrets, keys, or tokens
-- [ ] Input validation on all external data
-- [ ] SQL queries use parameterized statements
-- [ ] User content is escaped before rendering
-- [ ] Authentication/authorization enforced
-- [ ] Sensitive data not logged
-- [ ] Error messages don't leak internals
-
-### 7. Production Readiness
-
-- [ ] Structured logging (not print statements)
-- [ ] Errors categorized appropriately
-- [ ] Health check endpoint works (if applicable)
-- [ ] Graceful shutdown handling
-- [ ] Environment-specific config externalized
-- [ ] No hardcoded URLs or environment assumptions
-
-## Output Format
+## 4. Report
 
 ```markdown
-## Release Checklist Results
+## Release checklist: <x.y.z>
 
 ### Passed
 
-- [x] No TODO/FIXME markers
-- [x] No debug statements
-- [x] Tests passing
-- [x] Lint passing
-- [x] Build succeeds
+- [x] ...
 
 ### Failed
 
-- [ ] CHANGELOG not updated (missing entry for new auth feature)
-- [ ] Found console.log at src/api/users.ts:45
+- [ ] ... (with the command output or the file:line)
 
 ### Warnings
 
-- [ ] New dependency 'lodash' added - verify it's needed (could use native methods)
+- [ ] ...
 
 ### Verdict
 
-**BLOCKED** - Fix the failures above before releasing.
+**READY** | **BLOCKED** - <one sentence>
 ```
 
-## When to Use
+BLOCKED stops here.
 
-- Before merging a feature branch
-- Before cutting a release tag
-- Before deploying to production
-- As the final step in a wiggum loop
+## 5. Release (READY only; ask before each step)
 
-## Integration with Wiggum
+`main` takes no direct commits, so the release goes through a PR:
 
-When used as part of a wiggum loop, this checklist runs during Phase 5 (Final Verification). All items must pass before the loop can complete.
+1. Create `chore/release-<x.y.z>` from `main`.
+2. In `CHANGELOG.md`, rename `## [Unreleased]` to `## [<x.y.z>] - <YYYY-MM-DD>` and add an empty
+   `## [Unreleased]` above it. Add the link reference at the bottom, above the older ones:
+   `[<x.y.z>]: https://github.com/sinhnguyen-agilityio/claude-training/tree/v<x.y.z>`. Set
+   `package.json` `version` to `<x.y.z>`.
+3. Commit `chore: release <x.y.z>`, push, and open the PR (`/ship` steps 4–5).
+4. After the PR is merged, find the merge commit (`gh pr view <n> --json mergeCommit`), then:
 
-## Remember
+   ```bash
+   git fetch github
+   git tag -a v<x.y.z> <merge commit sha> -m "Release <x.y.z>"
+   git push github v<x.y.z>
+   ```
 
-This checklist exists because senior developers do these checks naturally. Making them explicit ensures nothing slips through, especially in automated workflows.
+   The pre-push hook blocks only branch pushes to `main`/`master`, so a tag push goes through.
 
-**If any item fails, the release is blocked.** Fix the issue and run the checklist again.
+No GitHub Release page: the CHANGELOG and `docs/releases/` are the release notes.
+
+## Rules
+
+- Never tag a commit that is not on `github/main`.
+- Never edit or delete an existing tag.
+- Never commit, push or tag without a yes for that step.

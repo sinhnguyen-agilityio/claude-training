@@ -5,6 +5,9 @@ import { defineConfig } from 'vitest/config'
 
 // https://vite.dev/config/
 export default defineConfig({
+  // Only the Deploy workflow sets BASE_PATH (GitHub Pages serves the app under /claude-training/).
+  // Everything else, E2E included, builds for the site root.
+  base: process.env.BASE_PATH ?? '/',
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
