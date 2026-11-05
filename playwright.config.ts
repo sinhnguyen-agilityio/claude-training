@@ -7,10 +7,13 @@ const PORT = Number(process.env.E2E_PORT) || 4173
 
 export default defineConfig({
   testDir: './tests/e2e',
+  // A BASE_PATH build only runs the subpath spec: the others use absolute paths that leave the base.
+  ...(process.env.BASE_PATH ? { testMatch: 'subpath.spec.ts' } : {}),
   fullyParallel: true,
   reporter: 'list',
   use: {
-    baseURL: `http://localhost:${PORT}`,
+    // With BASE_PATH set (only for tests/e2e/subpath.spec.ts), relative paths resolve under it.
+    baseURL: `http://localhost:${PORT}${process.env.BASE_PATH ?? ''}`,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },

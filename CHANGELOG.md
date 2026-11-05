@@ -16,6 +16,9 @@ All notable changes to this project are listed here, newest first. The format fo
   live at <https://sinhnguyen-agilityio.github.io/claude-training/> (#23).
 - `E2E_PORT` sets the E2E port, so two worktrees can run E2E at once; `BASE_PATH` sets the build's
   base path (#23).
+- A smoke E2E (`tests/e2e/subpath.spec.ts`) on a `BASE_PATH=/claude-training/` build, run in CI
+  after `pnpm e2e`, so a base-path bug in the build, the router or the mock service worker fails
+  the PR before it reaches GitHub Pages (#26).
 
 ### Changed
 
