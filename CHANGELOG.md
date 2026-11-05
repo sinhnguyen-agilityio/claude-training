@@ -22,6 +22,13 @@ All notable changes to this project are listed here, newest first. The format fo
 
 ### Changed
 
+- Fixes to the workflow skills found while running #26: `triage-review` also reads conversation
+  comments and reviews (the CI review is one), `start-ticket` skips the questions for an issue that
+  has none open, `ship` reports a check that fails once and then passes as possibly flaky,
+  `pr-walkthrough` shows the head commit and asks for a rerun after new commits, and
+  `review-checklist` and `pr-description` match `WORKFLOW.md` (#28).
+- Commit messages carry no `Co-Authored-By` or "Generated with Claude Code" line, like PR
+  descriptions (#28).
 - The issue (Feature, Bug) and PR formats live in the `ticket-pack`, `bug-report` and
   `pr-description` skills. They add Assumptions and Definition of done, and the PR format adds
   Assumptions, an AC → test table and Risk. `ticket-pack` runs a readiness check (#22).

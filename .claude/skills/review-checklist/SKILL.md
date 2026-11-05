@@ -15,7 +15,7 @@ branch before asking for review, or of a partner's PR/MR. It reviews **one chang
 
 ```
 /review-checklist            # current branch vs main
-/review-checklist 2          # GitHub PR #2 (or GitLab MR !2)
+/review-checklist 2          # GitHub PR #2
 /review-checklist feat/x     # another branch vs main
 ```
 
@@ -24,8 +24,8 @@ branch before asking for review, or of a partner's PR/MR. It reviews **one chang
 1. Work out the target from the argument: a PR/MR number, a branch, or (default) the current branch.
 2. Get the diff and the commit list against the merge base with `main`:
    - Branch: `git diff main...<branch>` and `git log --oneline main..<branch>`.
-   - PR/MR: read the title, description and diff through the GitHub or GitLab tools if they are
-     available. Otherwise fetch the source branch and diff it locally.
+   - PR: `gh pr view <n> --json title,body,headRefName` for the title, description and branch, and
+     `gh pr diff <n>` for the diff (the skills use `gh`, see `WORKFLOW.md`).
 3. Read `WORKFLOW.md` and `CLAUDE.md`, plus `docs/architecture.md` and `docs/testing.md` when the diff
    touches the API layer or tests. **Project rules beat generic advice.**
 4. Read each changed file in full, not only the hunks. Trace callers with Grep when a finding
@@ -77,8 +77,8 @@ Do not skip ahead. A correctness bug matters more than a naming nit, so the orde
 - The change does what its issue asks and nothing more. Unrelated refactors belong in their own MR.
 - No features from SPEC §7 "Out of scope" without an issue that changes the spec.
 - Docs updated when behaviour or commands change (README, CLAUDE.md, SPEC, WORKFLOW).
-- Process: branch named `feat|fix/<issue>-<slug>`, conventional commit messages, and the PR/MR
-  description references the issue (`Closes #<n>`).
+- Process: branch named `feat|fix|chore|docs/<issue>-<slug>` (`WORKFLOW.md` rule 2), conventional
+  commit messages, and the PR/MR description references the issue (`Closes #<n>`).
 
 ## 3. Rules for comments
 

@@ -86,7 +86,8 @@ Read these on demand, not for every task:
 - Never assert CSS in jsdom tests, including Tailwind class names (`toHaveClass`, `className`).
   jsdom applies no CSS, so check visual behaviour (hover, computed colors, sizes) only in
   Playwright.
-- Never put a "Generated with Claude Code" or co-author line in MR/PR descriptions.
+- Never put a "Generated with Claude Code" or `Co-Authored-By` line in commit messages or MR/PR
+  descriptions.
 - Never use `any`, enums or parameter properties in app code.
 - Never add features listed as out of scope in SPEC §7 (auth, a real backend, selecting users
   across pages, import, i18n, avatars; CSV export is F8) without an issue that changes the spec.

@@ -18,14 +18,16 @@ start reading and what to check.
 
 ## 1. Read the PR
 
-1. `gh pr view <n> --json number,title,url,body,headRefName,baseRefName,files,commits`.
+1. `gh pr view <n> --json number,title,url,body,headRefName,baseRefName,headRefOid,additions,deletions,changedFiles,files,commits`.
 2. `gh pr diff <n>`, and read each changed file in full where the diff needs context.
 3. Read the linked issue (`Closes #<i>` in the body): its ACs and its Assumptions section.
 
 ## 2. Write the page
 
 Read the artifacts server's `guide` (topics `pages` and `design`) before the first publish in a
-session. The page has these sections:
+session. The page opens with a line of facts: the branch, the head commit (`headRefOid`, 7
+characters) and the file and line totals. A page describes one commit, and this line lets a reader
+see that the PR has moved on since. Then these sections:
 
 1. **Summary**: at most 3 sentences. What changes for the user or the developer.
 2. **Why**: the problem, and the issue link.
@@ -47,6 +49,9 @@ Keep the facts exact: file paths, test names and commands copied from the PR, ne
   slug is in the URL; read its current version first). Otherwise create a new one.
 - The artifact starts private. Print its URL and say that only the author can share it (the
   sharing controls are on claude.ai, not in this tool).
+- Say that the page describes the head commit shown at its top. Run `/pr-walkthrough #<n>` again
+  after new commits (for example fixes for review comments) and before the merge; it republishes
+  the same artifact.
 
 ## 4. Link it (ask first)
 
