@@ -1,6 +1,9 @@
 import { defineConfig, devices } from '@playwright/test'
 
-const PORT = 4173
+// E2E_PORT lets two worktrees run E2E at once. With one fixed port, reuseExistingServer below
+// would make the second run test the first worktree's build.
+// An empty or non-numeric value falls back to the default instead of becoming port 0 or NaN.
+const PORT = Number(process.env.E2E_PORT) || 4173
 
 export default defineConfig({
   testDir: './tests/e2e',

@@ -8,6 +8,35 @@ All notable changes to this project are listed here, newest first. The format fo
 
 ### Added
 
+- Workflow skills `start-ticket`, `ship`, `pr-walkthrough` and `triage-review`, and `loop.md` for
+  watching an open PR with `/loop` (#22).
+- `skills.test.mjs`: checks every skill's frontmatter, its README row, and the headings of the
+  issue and PR formats (#22).
+- Deploy to GitHub Pages after CI passes on `main` (`.github/workflows/deploy.yml`). The app is
+  live at <https://sinhnguyen-agilityio.github.io/claude-training/> (#23).
+- `E2E_PORT` sets the E2E port, so two worktrees can run E2E at once; `BASE_PATH` sets the build's
+  base path (#23).
+
+### Changed
+
+- The issue (Feature, Bug) and PR formats live in the `ticket-pack`, `bug-report` and
+  `pr-description` skills. They add Assumptions and Definition of done, and the PR format adds
+  Assumptions, an AC → test table and Risk. `ticket-pack` runs a readiness check (#22).
+- `WORKFLOW.md` describes the full pipeline from issue to merge, and branches may also start with
+  `chore/` or `docs/` (#22).
+- The Claude Code review in CI runs once per PR, when it is opened or marked ready, and skips
+  drafts. Ask for another with an `@claude review this PR` comment (#24).
+- `release-checklist` is written for this repo: CHANGELOG, release notes, version and a `vX.Y.Z`
+  tag, released through a PR (#24).
+
+### Removed
+
+- The issue and PR/MR template files in `.github/` and `.gitlab/`, and `templates.test.mjs` (#22).
+
+## [1.0.0] - 2026-10-30
+
+### Added
+
 - Bulk actions on the users list: select rows, then delete or set status in one step (F7).
   See [docs/releases/f7-bulk-actions.md](docs/releases/f7-bulk-actions.md).
 - Export the users list to a CSV file (F8).
@@ -27,3 +56,5 @@ All notable changes to this project are listed here, newest first. The format fo
 ### Removed
 
 - The `mcp/` demo and the `how-we-write-migrations` skill.
+
+[1.0.0]: https://github.com/sinhnguyen-agilityio/claude-training/tree/v.1.0.0

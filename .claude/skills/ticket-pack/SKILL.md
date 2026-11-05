@@ -27,8 +27,8 @@ It writes the pack. It does not create issues, branches or files unless the user
 2. Read the sources of truth: the spec (`docs/SPEC.md`),
    `CLAUDE.md`, and `WORKFLOW.md`. **Existing rules beat guesses.** If the spec already
    answers a question, do not ask it.
-3. Read `.github/ISSUE_TEMPLATE/feature.md` and follow its sections, so the pack can be pasted into
-   an issue unchanged.
+3. Follow the Feature format in [Template](#template) below, so each ticket can be pasted into an
+   issue unchanged. There are no issue template files in the repo; this section is the format.
 4. Note what the requirement touches that already exists (endpoints, schemas, screens) with Grep.
 
 ## 2. Split into tickets
@@ -59,7 +59,10 @@ Use these sections, in this order.
 6. **Test plan**: which acceptance criteria are covered by unit/component tests and which by an E2E
    journey. Follow the project test rules.
 7. **Definition of done**: the checks from `WORKFLOW.md`, and the docs that must be updated.
-8. **Open questions**: see step 4.
+8. **Dependencies**: other tickets this one needs or blocks, and manual steps (a repo setting).
+9. **Open questions**: see step 4.
+10. **Assumptions**: every question answered with its default instead of by a person, as
+    `ID | Question | Default taken | Why | Affects`. "None" when every question was answered.
 
 ## 4. Write the open questions
 
@@ -97,8 +100,17 @@ default. Then report the score:
 
 - **Gaps found and fixed:** the number resolved into ACs.
 - **Open questions left:** the number, by priority.
+
+Then run the **readiness check** on each ticket. All three must pass:
+
+| Check                | Passes when                                                       |
+| -------------------- | ----------------------------------------------------------------- |
+| **What it asks**     | The outcome fits in one sentence.                                 |
+| **What's ambiguous** | Every open question is answered or recorded as an assumption.     |
+| **First step**       | The first concrete action is named (a file, a test or a command). |
+
 - **Verdict:** **Ready** (no Blockers or High left), **Ready with defaults** (only Medium/Low, defaults
-  stated), or **Not ready** (a Blocker is open).
+  stated), or **Not ready** (a Blocker is open, or a readiness check fails; say which and why).
 
 ## 6. Quality checks (do not skip)
 
@@ -111,7 +123,46 @@ default. Then report the score:
 - [ ] Nothing is invented: a decision the requirement does not support is a question or a default
       marked as one.
 
+## Template
+
+The body of a Feature issue. Use these headings, in this order. Label the issue `enhancement`.
+
+```markdown
+## Story
+
+As a <role>, I want <capability>, so that <benefit>.
+
+## Background
+
+## Acceptance criteria
+
+- **AC1** **Given** ... **When** ... **Then** ...
+
+## Out of scope
+
+## Test plan
+
+- [ ] Unit / component: AC1, AC2
+- [ ] E2E: AC1, AC3
+
+## Definition of done
+
+## Dependencies
+
+## Open questions
+
+| ID  | Priority | Question | Why it matters | Default if unanswered | Blocks |
+| --- | -------- | -------- | -------------- | --------------------- | ------ |
+
+## Assumptions
+
+| ID  | Question | Default taken | Why | Affects |
+| --- | -------- | ------------- | --- | ------- |
+```
+
 ## Output format
+
+The pack wraps one or more tickets in the Template format, one heading level down.
 
 ```markdown
 # Ticket pack: <requirement title>
@@ -144,10 +195,19 @@ default. Then report the score:
 | ID  | Priority | Question | Why it matters | Default if unanswered | Blocks |
 | --- | -------- | -------- | -------------- | --------------------- | ------ |
 
+## Assumptions
+
+| ID  | Question | Default taken | Why | Affects |
+| --- | -------- | ------------- | --- | ------- |
+
 ## Zero-questions test
 
 Gaps found and fixed: <n> · Open questions: <n> (Blocker <a>, High <b>, Medium <c>, Low <d>)
+Readiness: What it asks <pass/fail> · What's ambiguous <pass/fail> · First step <pass/fail>
 ```
+
+When asking the user the open questions, ask them one at a time as multiple choice, with the
+default first (see `/start-ticket` step 2), not as a table to answer by ID.
 
 Write the pack in the language of the issue tracker (English for GitHub issues in this repo),
 whatever language the requirement arrived in. Do not create issues or files yourself. Offer to do
