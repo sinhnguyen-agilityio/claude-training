@@ -34,6 +34,13 @@ edits code before the plan is approved.
 Print the open questions as a short list (ID, priority, one line each) and the current verdict.
 Change nothing yet.
 
+**Fast path.** An issue written by `/ticket-pack` has already been through the questions. When its
+`Open questions` section says `None` or has no rows, and it has an `Assumptions` section (`None`
+counts), asking again only repeats work. Skip steps 2 and 4 and state the three readiness results
+of step 3 in one line, each taken from the body. Show that line with the branch question of step 5,
+so the developer confirms both at once. If reading the code turns up a gap the issue does not
+cover, say so and use the full path instead.
+
 ## 2. Ask, one question at a time
 
 Ask each open question with AskUserQuestion, Blockers first:

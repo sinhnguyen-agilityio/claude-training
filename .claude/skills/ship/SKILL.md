@@ -28,8 +28,16 @@ Refuse on `main` or `master`. Then run, in order, stopping at the first failure:
 5. `node --test .claude/hooks/*.test.mjs`, only when `git diff --name-only main...HEAD` plus the
    working tree touch `.claude/`
 
-On a failure, show the command and the last 40 lines of its output, say whether the code or the
-test looks wrong, and stop. Do not commit.
+Run each check as `<command> > <scratchpad>/<check>.log 2>&1; echo exit=$?`, so the full output is
+kept and the exit code is not lost. A test name that scrolled past is gone, which is how a flaky
+test in #26 went unidentified.
+
+On a failure, rerun that one check once. If it fails again, show the command and the last 40 lines
+of the log (`tail -n 40`), say whether the code or the test looks wrong, and stop. Do not commit.
+
+If the rerun passes, the check is **possibly flaky**, not fine. Name the failing test from the
+first log, tell the developer, and offer to open an issue for it (ask first). Then go on. Do not
+carry on silently: a CI that goes red at random teaches people to ignore red.
 
 ## 2. Diff pane and summary
 
@@ -60,7 +68,8 @@ on the diff or the findings, Claude fixes, and steps 1–3 run again until the d
 ## 4. Commit and push (ask each time)
 
 1. Propose the commit messages: conventional prefix (`feat:`, `fix:`, `test:`, `chore:`, `docs:`),
-   the SPEC tag where relevant (`(F4)`), one commit per logical change.
+   the SPEC tag where relevant (`(F4)`), one commit per logical change. No `Co-Authored-By` or
+   "Generated with Claude Code" line (`CLAUDE.md`), whatever the tool's default is.
 2. Add an entry under `## [Unreleased]` in `CHANGELOG.md` (Added, Changed, Fixed or Removed), in
    the same style as the existing entries.
 3. Ask, then commit. Never use `--no-verify`. If a git hook rejects the commit, show its message

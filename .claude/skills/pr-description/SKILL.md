@@ -28,9 +28,8 @@ the repo; this section is the format, and `/ship` uses it when it opens the PR.
 
 ## 2. Fill in the sections
 
-- **What**: what changed and in which modules, who is affected. Put the risk first. Mention
-  anything that is not obvious from the title, such as a new dependency or a changed public
-  behaviour.
+- **What**: what changed and in which modules, who is affected. Mention anything that is not
+  obvious from the title, such as a new dependency or a changed public behaviour.
 - **Why**: `Closes #N`, the problem in one or two sentences, and why this approach over the obvious
   alternative.
 - **Assumptions**: copy the issue's assumptions (`ID | Default taken | Affects`) and ask the reviewer to
@@ -72,8 +71,9 @@ Walkthrough: -
 
 ## Rules
 
-- Do not add a "Generated with Claude Code" or co-author line. This repo's rule is that PR and MR
-  descriptions carry no such line.
+- Do not add a "Generated with Claude Code" or `Co-Authored-By` line. This repo's rule is that
+  commit messages and PR and MR descriptions carry no such line.
 - Do not open the PR, push or comment. Output the description in the chat for the author to paste,
   or hand it to `/ship`, which opens the PR.
-- Keep it short. A reviewer skims; put the risk in the first lines of What.
+- Keep it short. A reviewer skims; What says what changed, and the Risk section says what could
+  break.
