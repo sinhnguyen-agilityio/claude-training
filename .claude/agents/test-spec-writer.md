@@ -26,5 +26,5 @@ network failure and the 375 px layout where they apply. Show the matrix before w
 
 ## 3. Run and report
 
-Run `pnpm exec playwright test <file>` and `pnpm lint`. Report the matrix, the files written and the
+Run `pnpm --filter @app/web exec playwright test <file>` and `pnpm lint`. Report the matrix, the files written and the
 real test output. If something fails, say whether the test or the app is wrong, with evidence.

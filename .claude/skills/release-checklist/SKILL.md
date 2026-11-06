@@ -45,8 +45,8 @@ pnpm audit --prod --audit-level=high
 
 - [ ] `CHANGELOG.md` has entries under `## [Unreleased]`.
 - [ ] Every `F<n>` mentioned under `[Unreleased]` has a `docs/releases/f<n>-*.md`.
-- [ ] `src/` has no `TODO`, `FIXME`, `console.log` or `debugger` outside test files:
-      `git grep -nE "TODO|FIXME|console\.log|debugger" -- src ':!*.test.ts' ':!*.test.tsx'`
+- [ ] `apps/web/src/` and `packages/shared/src/` have no `TODO`, `FIXME`, `console.log` or `debugger` outside test files:
+      `git grep -nE "TODO|FIXME|console\.log|debugger" -- apps/web/src packages/shared/src ':!*.test.ts' ':!*.test.tsx'`
 - [ ] The tag `v<x.y.z>` does not exist yet (`git tag -l v<x.y.z>`).
 - [ ] `<x.y.z>` is higher than the latest released version: the highest tag matching `v<x.y.z>`
       or `v.<x.y.z>`, and the latest `## [x.y.z]` heading in `CHANGELOG.md`.

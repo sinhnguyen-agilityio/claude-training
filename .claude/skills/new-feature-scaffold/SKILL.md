@@ -24,7 +24,7 @@ it never commits.
 2. Read `docs/SPEC.md` (§3 data model, §4 API, §5 the feature's ACs, §7 out of scope),
    `docs/architecture.md` and `docs/testing.md`. If the feature is out of scope in §7 or has no ACs,
    stop and say so.
-3. Read the closest existing feature under `src/features/users/` (for example `DeleteUser`) and copy
+3. Read the closest existing feature under `apps/web/src/features/users/` (for example `DeleteUser`) and copy
    its structure, not a generic template.
 4. List the files you will create or change and wait for a yes.
 
@@ -36,7 +36,7 @@ it never commits.
 2. **Shared schema.** Add to `schema.ts` or `query.ts`, the one place the form and the mock API both
    import. Never validate on one side only.
 3. **Mock API.** A handler in `mocks/handlers.ts` and a method in `mocks/repository.ts`. Do not touch
-   the seed users in `mocks/seed.ts`.
+   the seed users in `packages/shared/src/seed.ts`.
 4. **Client and hooks.** `api/client.ts` and `api/hooks.ts`, with keys from `userKeys`, and the right
    invalidation (see the Cache section of `docs/architecture.md`).
 5. **Page and route.** Under `pages/`, with labelled inputs, keyboard-operable dialogs, focus
