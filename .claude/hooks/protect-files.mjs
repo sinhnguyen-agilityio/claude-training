@@ -37,7 +37,7 @@ const RULES = [
   },
   {
     check: (rel, input) =>
-      /^(apps[/]web[/])?vite\.config\.[cm]?[jt]s$/.test(rel) &&
+      /^(apps[/](web|api)[/])?vite(st)?\.config\.[cm]?[jt]s$/.test(rel) &&
       /thresholds/.test(`${addedText(input)}\n${removedText(input)}`)
         ? 'The 80% coverage threshold must not be lowered to get a run passing. Ask the user first.'
         : null,

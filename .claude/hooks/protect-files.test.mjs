@@ -41,6 +41,16 @@ test('blocks a coverage threshold edit in vite.config.ts', () => {
   assert.equal(t.status, 2)
 })
 
+test('blocks a coverage threshold edit in the api vitest.config.ts', () => {
+  const r = run({
+    file_path: join(repo, 'apps/api/vitest.config.ts'),
+    old_string: 'thresholds: { lines: 80 }',
+    new_string: 'thresholds: { lines: 70 }',
+  })
+  assert.equal(r.status, 2)
+  assert.equal(run({ file_path: join(repo, 'apps/api/vitest.config.ts'), new_string: 'x' }).status, 0)
+})
+
 test('blocks a MultiEdit that touches thresholds', () => {
   const r = run({
     file_path: join(repo, 'apps/web/vite.config.ts'),
