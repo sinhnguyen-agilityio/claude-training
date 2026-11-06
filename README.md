@@ -91,14 +91,16 @@ Run `claude` from the repository root. It picks up the configuration below autom
 
 Configured in [.claude/settings.json](.claude/settings.json), with scripts in [.claude/hooks/](.claude/hooks/):
 
-| Hook                                                       | Event         | What it does                                                                                               |
-| ---------------------------------------------------------- | ------------- | ---------------------------------------------------------------------------------------------------------- |
-| [block-forbidden.mjs](.claude/hooks/block-forbidden.mjs)   | `PreToolUse`  | Blocks risky git commands run through Bash/PowerShell (force push, hard reset, work on protected branches) |
-| [format-on-edit.mjs](.claude/hooks/format-on-edit.mjs)     | `PostToolUse` | Runs Prettier on files Claude edits or writes                                                              |
-| [notify-on-finish.mjs](.claude/hooks/notify-on-finish.mjs) | `Stop`        | Shows a Windows toast and plays a sound when Claude finishes a turn                                        |
+| Hook                                                         | Event         | What it does                                                                                               |
+| ------------------------------------------------------------ | ------------- | ---------------------------------------------------------------------------------------------------------- |
+| [block-forbidden.mjs](.claude/hooks/block-forbidden.mjs)     | `PreToolUse`  | Blocks risky git commands run through Bash/PowerShell (force push, hard reset, work on protected branches) |
+| [protect-files.mjs](.claude/hooks/protect-files.mjs)         | `PreToolUse`  | Blocks edits to `pnpm-lock.yaml`, `src/mocks/seed.ts` and the coverage `thresholds` in `vite.config.ts`    |
+| [format-on-edit.mjs](.claude/hooks/format-on-edit.mjs)       | `PostToolUse` | Runs Prettier on files Claude edits or writes                                                              |
+| [typecheck-on-edit.mjs](.claude/hooks/typecheck-on-edit.mjs) | `PostToolUse` | Runs `tsc -b` after a `.ts`/`.tsx` edit and feeds type errors back to Claude                               |
+| [notify-on-finish.mjs](.claude/hooks/notify-on-finish.mjs)   | `Stop`        | Shows a Windows toast and plays a sound when Claude finishes a turn                                        |
 
-If the guard script cannot be loaded, the `PreToolUse` hook blocks the command (fails closed); the
-other two only report an error.
+If a `PreToolUse` script cannot be loaded, the hook blocks the call (fails closed); the others only
+report an error.
 
 ### Skills
 
@@ -106,17 +108,19 @@ Defined in [.claude/skills/](.claude/skills/). Each one is also a slash command.
 formats live in `ticket-pack`, `bug-report` and `pr-description`; there are no template files. The
 order they run in is in [WORKFLOW.md](WORKFLOW.md).
 
-| Skill                                                          | Use it to                                                                             |
-| -------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| [ticket-pack](.claude/skills/ticket-pack/SKILL.md)             | Turn a requirement into a ticket pack; owns the Feature format (`/ticket-pack`)       |
-| [bug-report](.claude/skills/bug-report/SKILL.md)               | Turn a rough description into a bug report; owns the Bug format (`/bug-report`)       |
-| [start-ticket](.claude/skills/start-ticket/SKILL.md)           | Clarify an issue, record assumptions, branch and plan it (`/start-ticket #12`)        |
-| [ship](.claude/skills/ship/SKILL.md)                           | Run the checks, show the diffs, review, commit, push and open the PR (`/ship`)        |
-| [pr-description](.claude/skills/pr-description/SKILL.md)       | Draft a PR/MR description; owns the PR format (`/pr-description`)                     |
-| [pr-walkthrough](.claude/skills/pr-walkthrough/SKILL.md)       | Publish a reviewer walkthrough page for a PR (`/pr-walkthrough #31`)                  |
-| [triage-review](.claude/skills/triage-review/SKILL.md)         | Answer review comments with fix, leave or ask why (`/triage-review #31`)              |
-| [review-checklist](.claude/skills/review-checklist/SKILL.md)   | Review a PR or branch (`/review-checklist 2`)                                         |
-| [release-checklist](.claude/skills/release-checklist/SKILL.md) | Check main, then open the release PR and tag the version (`/release-checklist 1.1.0`) |
+| Skill                                                                | Use it to                                                                                          |
+| -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| [ticket-pack](.claude/skills/ticket-pack/SKILL.md)                   | Turn a requirement into a ticket pack; owns the Feature format (`/ticket-pack`)                    |
+| [bug-report](.claude/skills/bug-report/SKILL.md)                     | Turn a rough description into a bug report; owns the Bug format (`/bug-report`)                    |
+| [start-ticket](.claude/skills/start-ticket/SKILL.md)                 | Clarify an issue, record assumptions, branch and plan it (`/start-ticket #12`)                     |
+| [ship](.claude/skills/ship/SKILL.md)                                 | Run the checks, show the diffs, review, commit, push and open the PR (`/ship`)                     |
+| [pr-description](.claude/skills/pr-description/SKILL.md)             | Draft a PR/MR description; owns the PR format (`/pr-description`)                                  |
+| [pr-walkthrough](.claude/skills/pr-walkthrough/SKILL.md)             | Publish a reviewer walkthrough page for a PR (`/pr-walkthrough #31`)                               |
+| [triage-review](.claude/skills/triage-review/SKILL.md)               | Answer review comments with fix, leave or ask why (`/triage-review #31`)                           |
+| [review-checklist](.claude/skills/review-checklist/SKILL.md)         | Review a PR or branch (`/review-checklist 2`)                                                      |
+| [release-checklist](.claude/skills/release-checklist/SKILL.md)       | Check main, then open the release PR and tag the version (`/release-checklist 1.1.0`)              |
+| [check-all](.claude/skills/check-all/SKILL.md)                       | Run lint, typecheck, coverage tests and E2E and report what is red (`/check-all`)                  |
+| [new-feature-scaffold](.claude/skills/new-feature-scaffold/SKILL.md) | Scaffold schema, mock API, hooks, page and tests for a feature (`/new-feature-scaffold F9 "Name"`) |
 
 [loop.md](loop.md) is the prompt for watching an open PR: `/loop 5m follow loop.md for PR #<n>`.
 
@@ -128,6 +132,16 @@ Defined in [.claude/agents/](.claude/agents/):
 | ------------------------------------------------------ | ---------------------------------------------------------------- |
 | [code-explorer](.claude/agents/code-explorer.md)       | Explore an unfamiliar area without filling the main session      |
 | [test-spec-writer](.claude/agents/test-spec-writer.md) | Turn acceptance criteria into a test matrix and Playwright specs |
+
+### MCP servers
+
+Configured in [.mcp.json](.mcp.json), shared with the team:
+
+- **context7**: live documentation for React 19, TanStack Query v5, React Router 8, Zod 4, MSW 3 and
+  Vitest 5. Approve it once when Claude Code asks. The config uses `cmd /c npx` for Windows; on
+  macOS or Linux, use `npx` directly.
+- **Playwright**: not in `.mcp.json`; use the Playwright plugin (`plugin:playwright`) to drive the
+  running app and check hover, colors and layout, which jsdom cannot.
 
 ### Hook and skill tests
 

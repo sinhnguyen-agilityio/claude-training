@@ -8,6 +8,9 @@ All notable changes to this project are listed here, newest first. The format fo
 
 ### Added
 
+- Claude Code hooks `protect-files` (blocks edits to `pnpm-lock.yaml`, the seed users and the
+  coverage thresholds) and `typecheck-on-edit` (runs `tsc -b` after a `.ts`/`.tsx` edit), the
+  skills `check-all` and `new-feature-scaffold`, and a `.mcp.json` with the context7 MCP server.
 - Workflow skills `start-ticket`, `ship`, `pr-walkthrough` and `triage-review`, and `loop.md` for
   watching an open PR with `/loop` (#22).
 - `skills.test.mjs`: checks every skill's frontmatter, its README row, and the headings of the

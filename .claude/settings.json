@@ -9,6 +9,15 @@
             "command": "node -e \"Promise.resolve().then(()=>import(require('url').pathToFileURL(require('path').join(process.env.CLAUDE_PROJECT_DIR,process.argv[1])).href)).catch(e=>{console.error('Hook error ('+process.argv[1]+'): '+e.message);process.exit(+process.argv[2])})\" .claude/hooks/block-forbidden.mjs 2"
           }
         ]
+      },
+      {
+        "matcher": "Edit|MultiEdit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"Promise.resolve().then(()=>import(require('url').pathToFileURL(require('path').join(process.env.CLAUDE_PROJECT_DIR,process.argv[1])).href)).catch(e=>{console.error('Hook error ('+process.argv[1]+'): '+e.message);process.exit(+process.argv[2])})\" .claude/hooks/protect-files.mjs 2"
+          }
+        ]
       }
     ],
     "Stop": [
@@ -28,6 +37,15 @@
           {
             "type": "command",
             "command": "node -e \"Promise.resolve().then(()=>import(require('url').pathToFileURL(require('path').join(process.env.CLAUDE_PROJECT_DIR,process.argv[1])).href)).catch(e=>{console.error('Hook error ('+process.argv[1]+'): '+e.message);process.exit(+process.argv[2])})\" .claude/hooks/format-on-edit.mjs 1"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|MultiEdit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"Promise.resolve().then(()=>import(require('url').pathToFileURL(require('path').join(process.env.CLAUDE_PROJECT_DIR,process.argv[1])).href)).catch(e=>{console.error('Hook error ('+process.argv[1]+'): '+e.message);process.exit(+process.argv[2])})\" .claude/hooks/typecheck-on-edit.mjs 1"
           }
         ]
       }
