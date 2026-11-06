@@ -55,6 +55,10 @@ touches nothing else:
   (punctuation and accents still follow the database collation), and every sort ends on the id, so
   paging never repeats a user. `q` is escaped with `utils/escapeLike.ts` (`%`, `_` and `\` are
   literal), and the shared schema rejects a NUL byte in it with a 400.
+  `GET /api/users/:id` has no `validate()`, because a bad id is a 404, not a 400 (SPEC §4):
+  `getUser` returns `null` for an id that does not pass `utils/isUuid.ts`, without a query, since the
+  `uuid` column would raise an error for it. `routes/users.ts` registers `/:id` last, so a fixed path
+  such as `/export` has to be added above it.
 - `db/`: `schema.ts` (the Drizzle `users` table and its enums), `client.ts` (`db` and a `pg` pool of
   at most 5 connections), `migrate.ts` and `seed.ts` (the functions, plus thin `*.cli.ts` entries
   for `pnpm db:migrate` and `pnpm db:seed`), `mappers.ts` (`toUser`: a row to the shared `User`,
