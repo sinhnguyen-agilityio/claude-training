@@ -17,12 +17,13 @@ Node 22+, pnpm (the version is pinned in `package.json`; `corepack enable` insta
 
 ```bash
 pnpm dev                 # dev server on http://localhost:5173
+pnpm api:dev             # API on http://localhost:3001 (PORT to change it); GET /api/health
 pnpm build               # tsc -b + vite build
 pnpm typecheck           # tsc -b
 pnpm lint                # oxlint --deny-warnings
 pnpm format              # prettier --write .   (format:check to verify)
-pnpm test                # vitest run (unit/component, jsdom)
-pnpm test:coverage       # enforces an 80% threshold on lines/statements/functions/branches
+pnpm test                # vitest run in every package (web: jsdom; api: supertest)
+pnpm test:coverage       # enforces an 80% threshold on lines/statements/functions/branches, per package
 pnpm e2e                 # Playwright: builds, serves the production build on :4173, runs apps/web/tests/e2e
 E2E_PORT=4174 pnpm e2e   # another port, so two worktrees can run E2E at the same time
 
@@ -30,6 +31,7 @@ E2E_PORT=4174 pnpm e2e   # another port, so two worktrees can run E2E at the sam
 pnpm --filter @app/web exec vitest run src/features/users/pages/DeleteUser.test.tsx
 pnpm --filter @app/web exec vitest run -t "part of the test name"
 pnpm --filter @app/web exec playwright test tests/e2e/delete-user.spec.ts
+pnpm --filter @app/api exec vitest run src/app.test.ts
 pnpm --filter @app/web exec playwright install chromium   # once, before the first E2E run
 ```
 
@@ -62,7 +64,8 @@ Read these on demand, not for every task:
 - Feature code lives in `apps/web/src/features/users/` (api, components, hooks, pages, plus the
   label module). Reusable UI, hooks and utils live in `apps/web/src/shared/`. The User schemas,
   the list query schema and the seed users live in `packages/shared` and are imported from
-  `@app/shared`.
+  `@app/shared`. The API lives in `apps/api` (`src/app.ts` exports `createApp()`, `src/server.ts`
+  calls `listen`), so tests use supertest without opening a port.
 - Styling is Tailwind v4 (`@import 'tailwindcss'` in `index.css`, no config file). `Button`
   joins its variant classes and `className` without resolving conflicts, so a variant's color or
   hover classes can silently beat the caller's.
