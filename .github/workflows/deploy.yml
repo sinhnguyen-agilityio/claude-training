@@ -49,10 +49,10 @@ jobs:
       - run: pnpm build
       # Pages has no SPA rewrites: a deep link like /claude-training/users/new gets 404.html, which
       # is the app itself, so the router takes over (the HTTP status is still 404).
-      - run: cp dist/index.html dist/404.html
+      - run: cp apps/web/dist/index.html apps/web/dist/404.html
       - uses: actions/upload-pages-artifact@v4
         with:
-          path: dist
+          path: apps/web/dist
 
   deploy:
     needs: build

@@ -32,7 +32,7 @@ jobs:
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test:coverage
-      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm --filter @app/web exec playwright install --with-deps chromium
       # The 59 tests take under a minute. Once they finished but Playwright never exited (run 39944427327),
       # so this step is capped, and DEBUG logs how the preview server is shut down if it happens again.
       - run: pnpm e2e
@@ -42,7 +42,7 @@ jobs:
       # GitHub Pages serves the app under /claude-training/ (deploy.yml), so the base path is tested
       # here, on its own build and port, before it can break the deployed site (#26).
       - name: Smoke E2E under /claude-training/
-        run: pnpm exec playwright test tests/e2e/subpath.spec.ts
+        run: pnpm --filter @app/web exec playwright test tests/e2e/subpath.spec.ts
         timeout-minutes: 5
         env:
           BASE_PATH: /claude-training/
@@ -52,7 +52,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playwright-results
-          path: test-results/
+          path: apps/web/test-results/
           if-no-files-found: ignore
 
   claude-hooks:

@@ -19,8 +19,8 @@ const run = (file_path, raw) => {
 }
 
 test('runs for .ts and .tsx files in the repo', () => {
-  assert.deepEqual(run(join(repo, 'src', 'main.tsx')), { status: 0, ran: true })
-  assert.deepEqual(run('src/shared/x.ts'), { status: 0, ran: true })
+  assert.deepEqual(run(join(repo, 'apps', 'web', 'src', 'main.tsx')), { status: 0, ran: true })
+  assert.deepEqual(run('apps/web/src/shared/x.ts'), { status: 0, ran: true })
 })
 
 test('skips other files, files outside the repo and node_modules', () => {
