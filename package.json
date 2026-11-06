@@ -11,6 +11,9 @@
     "db:up": "docker compose up -d --wait db",
     "db:down": "docker compose down",
     "db:destroy": "docker compose down -v",
+    "db:generate": "pnpm --filter @app/api db:generate",
+    "db:migrate": "pnpm --filter @app/api db:migrate",
+    "db:seed": "pnpm --filter @app/api db:seed",
     "typecheck": "tsc -b",
     "lint": "oxlint --deny-warnings",
     "format": "prettier --write .",
@@ -32,6 +35,6 @@
   },
   "packageManager": "pnpm@12.6.0",
   "engines": {
-    "node": ">=22"
+    "node": ">=22.9.0"
   }
 }

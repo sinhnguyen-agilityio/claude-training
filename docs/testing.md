@@ -5,8 +5,18 @@ How tests are written and run. Read this before adding or changing a test.
 > Until #46 merges, E2E runs against the browser's MSW mock. After it, MSW stays only as the
 > Vitest network layer and E2E runs against the Express API and PostgreSQL.
 
-- API tests (`apps/api`) use Vitest and supertest against `createApp()`: no port is opened and no
-  database is needed yet. Run them with `pnpm --filter @app/api test`.
+- API tests (`apps/api`) use Vitest and supertest against `createApp()`: no port is opened. Tests
+  that touch the database need Postgres, so run `pnpm db:up` first (CI has a `postgres:16` service).
+  Run them with `pnpm --filter @app/api test`.
+- **A database per test file.** `createTestDb({ seed? })` from `apps/api/src/test/createTestDb.ts`
+  creates a Postgres schema named `test_<random>`, applies the migrations in it (the `"public".`
+  prefix drizzle-kit writes on enum types is rewritten to that schema), seeds the 25 users when
+  `seed: true`, and drops the schema in `afterAll`. Call it once at the top of the file, with
+  top-level `await`, and use the returned `db`. Files running in parallel never see each other's
+  rows. It reads `DATABASE_URL` and falls back to the local default of `.env.example`. A test of
+  the migrations themselves (`db/migrate.test.ts`) creates a whole throwaway database instead,
+  because the migration journal is per database. A run that is killed can leave a `test_*` schema
+  behind; `pnpm db:destroy` removes it with the rest of the data.
 - `renderRoute(path)` from `apps/web/src/test/renderWithProviders.tsx` renders the **real route tree** and
   returns `{ user, router, queryClient }`. Requests go to the MSW node server (`mocks/node.ts`);
   override one endpoint with `server.use(http.…)`. Handlers are reset after each test, and

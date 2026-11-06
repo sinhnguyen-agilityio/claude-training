@@ -8,6 +8,12 @@ All notable changes to this project are listed here, newest first. The format fo
 
 ### Added
 
+- The database layer of the API: the Drizzle `users` table (enum `role` and `status`, a unique
+  index on `lower(email)`), the first SQL migration in `apps/api/drizzle`, a `db` client on a `pg`
+  pool of at most 5 connections, `toUser()` (row to the shared `User`), and the scripts
+  `pnpm db:generate`, `pnpm db:migrate` and `pnpm db:seed` (the last one replaces the rows with the
+  25 seed users in one transaction). `createTestDb()` gives each API test file its own Postgres
+  schema, and the CI `app` job has a `postgres:16` service for it (#37).
 - `docker-compose.yml` with a `db` service (Postgres 16, healthcheck, named volume `pgdata`),
   `.env.example`, and the scripts `pnpm db:up`, `pnpm db:down` and `pnpm db:destroy` (#36).
 - API structure: the layer folders under `apps/api/src`, `loadEnv()` for `PORT`, `DATABASE_URL`,
@@ -37,6 +43,9 @@ All notable changes to this project are listed here, newest first. The format fo
 
 ### Changed
 
+- `DATABASE_URL` is now required by the API: `pnpm api:dev` and `pnpm start` read it from `.env`
+  at the repo root (copy `.env.example`), and the process exits naming the variable when it is
+  missing (#37).
 - The repo is a pnpm workspace: the app moved to `apps/web`, and the User schemas, the list query
   schema and the 25 seed users moved to `packages/shared` (`@app/shared`), so the API can import
   them. Root scripts, CI, deploy and the Claude hooks use the new paths; no behaviour change (#33).
