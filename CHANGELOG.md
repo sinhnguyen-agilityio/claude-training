@@ -8,6 +8,11 @@ All notable changes to this project are listed here, newest first. The format fo
 
 ### Added
 
+- `GET /api/users`: list, search, filter, sort and page the users from PostgreSQL, parsed with the
+  shared `usersQuerySchema`. `q` matches first name, last name or email separately and without
+  regard to case (`%`, `_` and `\` are literal); names sort without regard to case, then by id; a
+  page past the end answers 200 with no users; a bad query answers 400 `Validation failed`.
+  `createApp` takes the database as `createApp({ db })` (#38).
 - The database layer of the API: the Drizzle `users` table (enum `role` and `status`, a unique
   index on `lower(email)`), the first SQL migration in `apps/api/drizzle`, a `db` client on a `pg`
   pool of at most 5 connections, `toUser()` (row to the shared `User`), and the scripts

@@ -29,6 +29,15 @@ describe('GET /api/health', () => {
   })
 })
 
+describe('routes that need the database', () => {
+  it('are not mounted when createApp gets no db, so /api/users answers 404', async () => {
+    const res = await request(createApp()).get('/api/users')
+
+    expect(res.status).toBe(404)
+    expect(res.body).toEqual({ message: 'Not found' })
+  })
+})
+
 describe('error handling', () => {
   it('answers 404 { message: "Not found" } for an unknown route under /api', async () => {
     const res = await request(createApp()).get('/api/nope')

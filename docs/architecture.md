@@ -42,9 +42,19 @@ Request flow: page → `features/users/api/hooks.ts` (TanStack Query) → `api/c
 touches nothing else:
 
 - `routes/`: one Express router per feature; `routes/index.ts` (`createApiRouter`) lists them and
-  keeps the 404 last. `createApp` mounts the result under `/api`.
-- `controllers/`: read the validated request, call a service, send the response.
-- `services/`: the business logic and the database access, through the `db` of `db/client.ts`.
+  keeps the 404 last. `createApp` mounts the result under `/api`. A router that stores data is a
+  function of the database, `createUsersRouter(db)`, and `createApiRouter` mounts it only when
+  `createApp({ db })` got one. `server.ts` always passes the real `db`; a test of an unrelated
+  route can leave it out and needs no Postgres.
+- `controllers/`: read the validated request, call a service, send the response. Like the router,
+  `createUsersController(db)` closes over the database it is given.
+- `services/`: the business logic and the database access. They take the `db` as their first
+  argument (`listUsers(db, query)`), so a test can pass the schema of `createTestDb()`.
+  `GET /api/users` counts first, then reads the page; a page past the end answers `data: []`
+  without the second query. Names are sorted on `lower()`, so letter case does not change the order
+  (punctuation and accents still follow the database collation), and every sort ends on the id, so
+  paging never repeats a user. `q` is escaped with `utils/escapeLike.ts` (`%`, `_` and `\` are
+  literal), and the shared schema rejects a NUL byte in it with a 400.
 - `db/`: `schema.ts` (the Drizzle `users` table and its enums), `client.ts` (`db` and a `pg` pool of
   at most 5 connections), `migrate.ts` and `seed.ts` (the functions, plus thin `*.cli.ts` entries
   for `pnpm db:migrate` and `pnpm db:seed`), `mappers.ts` (`toUser`: a row to the shared `User`,
@@ -67,5 +77,5 @@ JSON 400 `Invalid JSON`, any other client error body-parser raises keeps its 4xx
   on `req.validated`, not `req.query`, which is read-only in Express 5.
 - **One log line per request**, also when the client hangs up first: `METHOD /path status 12ms`. The query string and the body are never
   logged.
-- **Tests** call `createApp({ logger, extraRouter })`: a recording logger to read the log, and an
-  extra router for a route that does not exist in the API (one that throws, for example).
+- **Tests** call `createApp({ logger, extraRouter, db })`: a recording logger to read the log, the
+  database of `createTestDb()` for a route that stores data, and an extra router for a route that does not exist in the API (one that throws, for example).
