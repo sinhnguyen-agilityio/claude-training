@@ -1,9 +1,22 @@
-import type { UsersPage, UsersQuery } from '@app/shared'
+import type { User, UsersPage, UsersQuery } from '@app/shared'
 import { and, asc, count, desc, eq, ilike, or, sql } from 'drizzle-orm'
 import { toUser } from '../db/mappers'
 import { users } from '../db/schema'
 import type { Database } from '../db/types'
 import { escapeLike } from '../utils/escapeLike'
+import { isUuid } from '../utils/isUuid'
+
+/**
+ * One user for `GET /api/users/:id`, or `null` when there is none. An id that is not a UUID has no
+ * user either: it is answered without a query, because the `uuid` column would raise an error for it
+ * (a 500) and the API treats it like any other unknown id (a 404).
+ */
+export async function getUser(db: Database, id: string): Promise<User | null> {
+  if (!isUuid(id)) return null
+
+  const [row] = await db.select().from(users).where(eq(users.id, id)).limit(1)
+  return row ? toUser(row) : null
+}
 
 /**
  * One page of users for `GET /api/users` (SPEC §4). `q` matches the first name, the last name or the

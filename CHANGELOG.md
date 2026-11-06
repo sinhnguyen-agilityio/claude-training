@@ -8,6 +8,9 @@ All notable changes to this project are listed here, newest first. The format fo
 
 ### Added
 
+- `GET /api/users/:id`: one user from PostgreSQL, as the shared `User` (ISO dates, `phone` `null` or
+  a string). An unknown id answers 404 `{ "message": "User not found" }`, and so does an id that is
+  not a UUID (checked before the query, which the `uuid` column would answer with a 500) (#39).
 - `GET /api/users`: list, search, filter, sort and page the users from PostgreSQL, parsed with the
   shared `usersQuerySchema`. `q` matches first name, last name or email separately and without
   regard to case (`%`, `_` and `\` are literal); names sort without regard to case, then by id; a
