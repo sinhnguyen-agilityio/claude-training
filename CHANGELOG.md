@@ -26,6 +26,7 @@ All notable changes to this project are listed here, newest first. The format fo
 ### Changed
 
 - `pr-walkthrough` shows each file's diff on the page, and the context7 MCP server is pinned to an exact version.
+- `pr-description`: How tested is now manual steps a reviewer can follow (setup, steps with expected results, edge cases) instead of a table of passed commands.
 - Fixes to the workflow skills found while running #26: `triage-review` also reads conversation
   comments and reviews (the CI review is one), `start-ticket` skips the questions for an issue that
   has none open, `ship` reports a check that fails once and then passes as possibly flaky,

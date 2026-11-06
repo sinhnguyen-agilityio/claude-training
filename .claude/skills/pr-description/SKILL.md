@@ -34,10 +34,26 @@ the repo; this section is the format, and `/ship` uses it when it opens the PR.
   alternative.
 - **Assumptions**: copy the issue's assumptions (`ID | Default taken | Affects`) and ask the reviewer to
   confirm them. "None" when the issue has none.
-- **How tested**: the commands that were run and their results (`pnpm lint`, `pnpm typecheck`,
-  `pnpm test:coverage`, `pnpm e2e`), and one row per acceptance criterion in `AC | Test | Result`.
-  Run the commands if no result is on record; never claim a pass you did not see. Add the edge
-  cases tried by hand.
+- **How tested**: how a reviewer tests the change by hand, as steps they can follow. It is not a
+  list of commands that passed. For a new feature A: how to run the app, which screen to open, what
+  to select and click, and what they should see. Write it as:
+  1. **Setup**: the commands (`pnpm install`, `pnpm dev`, the URL), and any data or state needed
+     first (a seed user, a filter, a reset).
+  2. **Steps**: a numbered list, one action each (open the screen, choose an option, click a
+     button), with the expected result after each action or group of actions. Name the labels,
+     buttons and routes as they appear in the app, copied from the code.
+  3. **Edge cases**: the failure and empty paths to try (invalid input, a 409, no results, a
+     reload, 375 px wide), each with its expected result.
+  4. **Automated**: one line with the checks that ran and their result (`pnpm lint`,
+     `pnpm typecheck`, `pnpm test:coverage`, `pnpm e2e`) and the tests that cover the change. Run
+     the commands if no result is on record; never claim a pass you did not see, and say which
+     did not run.
+
+  Use the acceptance criteria as the steps' checklist: every AC is covered by at least one step.
+  For a change with no screen (a hook, a skill, a config file), the steps are how to trigger it
+  (the command, the edit to make) and what the reviewer should see. Do not run the steps yourself
+  and report them as done unless you did.
+
 - **Risk**: what could break, and how it would show. "Low" with one reason is fine.
 - **Evidence**: a short list of what to attach (before and after screenshots, a GIF of the flow,
   pasted log text). You cannot capture screenshots, so list them as items for the author to attach.
@@ -59,8 +75,17 @@ Closes #<n>
 
 ## How tested
 
-| AC  | Test | Result |
-| --- | ---- | ------ |
+**Setup**
+
+**Steps**
+
+1. <action> -> <expected result>
+
+**Edge cases**
+
+- <case> -> <expected result>
+
+**Automated**
 
 ## Risk
 
