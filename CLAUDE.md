@@ -33,8 +33,10 @@ pnpm exec playwright test tests/e2e/delete-user.spec.ts
 pnpm exec playwright install chromium   # once, before the first E2E run
 ```
 
-A Husky pre-commit hook runs lint-staged (oxlint + Prettier on staged files). The pre-review checks
-are in the Workflow section below.
+A Husky pre-commit hook runs lint-staged (oxlint + Prettier on staged files). Husky also checks the
+commit message and the branch name against the convention in [WORKFLOW.md](WORKFLOW.md) rules 2
+and 3 (`type(scope): description`, `<type>/<n>-<slug>`). The pre-review checks are in the Workflow
+section below.
 
 ## Workflow
 

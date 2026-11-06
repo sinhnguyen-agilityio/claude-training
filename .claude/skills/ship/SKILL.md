@@ -67,8 +67,11 @@ on the diff or the findings, Claude fixes, and steps 1–3 run again until the d
 
 ## 4. Commit and push (ask each time)
 
-1. Propose the commit messages: conventional prefix (`feat:`, `fix:`, `test:`, `chore:`, `docs:`),
-   the SPEC tag where relevant (`(F4)`), one commit per logical change. No `Co-Authored-By` or
+1. Propose the commit messages in the `WORKFLOW.md` rule 3 format, `type(scope)!: description`:
+   a type from `feat`, `fix`, `docs`, `test`, `refactor`, `perf`, `ci`, `build`, `chore`, `revert`;
+   the whole header at most 72 characters, imperative, lowercase first letter, no trailing period;
+   the SPEC or issue tag at the end where relevant (`(F4)`, `(#32)`); one commit per logical
+   change. The `.husky/commit-msg` hook rejects anything else. Use the same format for the PR title. No `Co-Authored-By` or
    "Generated with Claude Code" line (`CLAUDE.md`), whatever the tool's default is.
 2. Add an entry under `## [Unreleased]` in `CHANGELOG.md` (Added, Changed, Fixed or Removed), in
    the same style as the existing entries.

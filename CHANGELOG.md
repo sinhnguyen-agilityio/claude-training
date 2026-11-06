@@ -8,6 +8,9 @@ All notable changes to this project are listed here, newest first. The format fo
 
 ### Added
 
+- Commit message and branch name convention, written in `WORKFLOW.md` rules 2 and 3 and enforced
+  by the `.husky/commit-msg` hook, `.husky/pre-push` and `block-forbidden.mjs`, which share
+  `.claude/hooks/convention.mjs` (#51).
 - Claude Code hooks `protect-files` (blocks edits to `pnpm-lock.yaml`, the seed users and the
   coverage thresholds) and `typecheck-on-edit` (runs `tsc -b` after a `.ts`/`.tsx` edit), the
   skills `check-all` and `new-feature-scaffold`, and a `.mcp.json` with the context7 MCP server.

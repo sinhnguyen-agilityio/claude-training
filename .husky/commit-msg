@@ -1,0 +1,5 @@
+# Check the commit message against the convention in WORKFLOW.md (rule 3). git passes the path of
+# the message file. The rules live in .claude/hooks/convention.mjs, shared with pre-push and
+# block-forbidden.mjs. The script is found from this file's own location, so it works from any
+# directory and in any worktree.
+node "$(dirname "$0")/../.claude/hooks/convention.mjs" commit-msg "$1"
