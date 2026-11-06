@@ -35,3 +35,32 @@ Request flow: page → `features/users/api/hooks.ts` (TanStack Query) → `api/c
   value differs) and `guardUnsavedChanges`. The guard (`shared/hooks/useUnsavedChangesGuard.ts`)
   combines a router `useBlocker` with `beforeunload`. Call `allowNavigation()` before navigating on
   purpose, or pass the navigation state `{ discardChanges: true }` to skip the guard.
+
+## API structure
+
+`apps/api/src` is split by layer. A feature ticket adds a router, a controller and a service, and
+touches nothing else:
+
+- `routes/`: one Express router per feature; `routes/index.ts` (`createApiRouter`) lists them and
+  keeps the 404 last. `createApp` mounts the result under `/api`.
+- `controllers/`: read the validated request, call a service, send the response.
+- `services/`: the business logic and, from #37, the database access.
+- `middlewares/`: `requestLogger`, `validate`, `notFound` and `errorHandler`.
+- `utils/`: `asyncHandler` (forwards an error from an async controller to `errorHandler`) and the
+  `Logger` type with `silentLogger` and `stdLogger`.
+- `constants/`: `HTTP_STATUS`, the page sizes (re-exported from `@app/shared`) and the bulk limits.
+- `config/env.ts`: `loadEnv()` parses `PORT`, `DATABASE_URL`, `ALLOW_RESET` and `NODE_ENV` with Zod. An
+  invalid value exits with code 1 and names the variable, never its value.
+
+Order in `createApp`: `requestLogger`, `express.json()`, the `/api` router, `errorHandler`. Error
+bodies follow SPEC §4, `{ message, fieldErrors? }`: unknown route 404 `Not found`, a body that is not
+JSON 400 `Invalid JSON`, any other client error body-parser raises keeps its 4xx status (413 `Payload too large`, otherwise `Bad request`), anything unexpected 500 `Internal server error` (logged with
+`logger.error`, never sent to the client).
+
+- **`validate({ body, query, params })`** answers 400 `Validation failed` with the first message per
+  field (nested paths joined with dots, an error on the whole value under `_`). The parsed values are
+  on `req.validated`, not `req.query`, which is read-only in Express 5.
+- **One log line per request**, also when the client hangs up first: `METHOD /path status 12ms`. The query string and the body are never
+  logged.
+- **Tests** call `createApp({ logger, extraRouter })`: a recording logger to read the log, and an
+  extra router for a route that does not exist in the API (one that throws, for example).
