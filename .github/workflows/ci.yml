@@ -18,6 +18,24 @@ jobs:
     runs-on: ubuntu-latest
     # A hung step otherwise runs until GitHub's 6 h limit.
     timeout-minutes: 15
+    # The API tests run against a real Postgres, one schema per test file (#37). Same image and
+    # credentials as docker-compose.yml, so DATABASE_URL matches .env.example.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app
+          POSTGRES_DB: users_dev
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U app -d users_dev"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://app:app@localhost:5432/users_dev
     steps:
       - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v4

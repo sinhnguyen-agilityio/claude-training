@@ -29,7 +29,7 @@ Tailwind CSS · MSW · Vitest + Testing Library · Playwright · oxlint + Pretti
 
 ## Run it from scratch
 
-Prerequisites: **Node.js 22+** and **pnpm**. Run `corepack enable` to install the pinned pnpm
+Prerequisites: **Node.js 22.9+** and **pnpm**. Run `corepack enable` to install the pinned pnpm
 version (on Node 25+, which no longer bundles Corepack, run `npm i -g corepack` first).
 
 ```bash
@@ -48,7 +48,8 @@ pnpm --filter @app/web exec playwright install chromium
 ## API
 
 `apps/api` is an Express 5 app (TypeScript, run with `tsx`). For now it answers one route, the
-health check. The browser app still uses the MSW mock until #46.
+health check. The browser app still uses the MSW mock until #46. The API needs `DATABASE_URL`
+(see [Local database](#local-database)) and reads it from `.env` at the repo root.
 
 ```bash
 pnpm api:dev                      # listens on PORT (default 3001): "API listening on :3001"
@@ -66,7 +67,15 @@ cp .env.example .env   # once; the defaults work as they are
 pnpm db:up             # docker compose up -d --wait db (returns once it is healthy)
 pnpm db:down           # stop the container, keep the data
 pnpm db:destroy        # stop the container and delete the data (down -v)
+pnpm db:migrate        # create or update the tables (safe to run again)
+pnpm db:seed           # replace the users with the 25 seed users (safe to run again)
+pnpm db:generate       # after editing apps/api/src/db/schema.ts: write a new SQL migration
 ```
+
+The tables are defined with Drizzle in `apps/api/src/db/schema.ts`, and the generated migrations
+are in `apps/api/drizzle/`. Commit a new migration with the schema change that caused it. The API
+tests use this database too, each test file in a schema of its own, so start it with `pnpm db:up`
+before `pnpm test`.
 
 The connection string is `DATABASE_URL` in `.env.example`
 (`postgres://app:app@localhost:5432/users_dev`). If port 5432 is taken, set `DB_PORT=5433` in
@@ -101,6 +110,9 @@ Setting it up once: **Settings → Pages → Source: GitHub Actions**.
 | `pnpm db:up`         | Start the local Postgres (Docker)             |
 | `pnpm db:down`       | Stop it, keep the data                        |
 | `pnpm db:destroy`    | Stop it and delete the data                   |
+| `pnpm db:generate`   | Write a SQL migration from the Drizzle schema |
+| `pnpm db:migrate`    | Apply the migrations                          |
+| `pnpm db:seed`       | Replace the users with the 25 seed users      |
 | `pnpm build`         | Type-check and build for production           |
 | `pnpm preview`       | Serve the production build                    |
 | `pnpm typecheck`     | Run the TypeScript compiler                   |

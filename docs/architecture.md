@@ -44,13 +44,18 @@ touches nothing else:
 - `routes/`: one Express router per feature; `routes/index.ts` (`createApiRouter`) lists them and
   keeps the 404 last. `createApp` mounts the result under `/api`.
 - `controllers/`: read the validated request, call a service, send the response.
-- `services/`: the business logic and, from #37, the database access.
+- `services/`: the business logic and the database access, through the `db` of `db/client.ts`.
+- `db/`: `schema.ts` (the Drizzle `users` table and its enums), `client.ts` (`db` and a `pg` pool of
+  at most 5 connections), `migrate.ts` and `seed.ts` (the functions, plus thin `*.cli.ts` entries
+  for `pnpm db:migrate` and `pnpm db:seed`), `mappers.ts` (`toUser`: a row to the shared `User`,
+  dates as ISO strings) and `types.ts` (`Database`, so tests can pass their own). The generated SQL
+  is in `apps/api/drizzle/`: change `schema.ts`, run `pnpm db:generate` and commit the result.
 - `middlewares/`: `requestLogger`, `validate`, `notFound` and `errorHandler`.
 - `utils/`: `asyncHandler` (forwards an error from an async controller to `errorHandler`) and the
   `Logger` type with `silentLogger` and `stdLogger`.
 - `constants/`: `HTTP_STATUS`, the page sizes (re-exported from `@app/shared`) and the bulk limits.
-- `config/env.ts`: `loadEnv()` parses `PORT`, `DATABASE_URL`, `ALLOW_RESET` and `NODE_ENV` with Zod. An
-  invalid value exits with code 1 and names the variable, never its value.
+- `config/env.ts`: `loadEnv()` parses `PORT`, `DATABASE_URL` (required), `ALLOW_RESET` and `NODE_ENV`
+  with Zod. An invalid or missing value exits with code 1 and names the variable, never its value.
 
 Order in `createApp`: `requestLogger`, `express.json()`, the `/api` router, `errorHandler`. Error
 bodies follow SPEC §4, `{ message, fieldErrors? }`: unknown route 404 `Not found`, a body that is not

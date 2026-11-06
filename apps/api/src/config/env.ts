@@ -6,8 +6,8 @@ const unsetIfEmpty = (value: unknown) =>
 
 const envSchema = z.object({
   PORT: z.preprocess(unsetIfEmpty, z.coerce.number().int().min(1).max(65535).default(3001)),
-  // Optional until the database ticket (#37) needs it.
-  DATABASE_URL: z.preprocess(unsetIfEmpty, z.url().optional()),
+  // Required: the API stores its users in PostgreSQL (SPEC §2).
+  DATABASE_URL: z.preprocess(unsetIfEmpty, z.url()),
   // z.coerce.boolean() would turn the string "false" into true, so the two strings are explicit.
   ALLOW_RESET: z
     .preprocess(unsetIfEmpty, z.enum(['true', 'false']).default('false'))

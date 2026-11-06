@@ -13,11 +13,13 @@ for the data model (§3), the API contract (§4) and the acceptance criteria for
 
 ## Commands
 
-Node 22+, pnpm (the version is pinned in `package.json`; `corepack enable` installs it).
+Node 22.9+, pnpm (the version is pinned in `package.json`; `corepack enable` installs it).
 
 ```bash
 pnpm dev                 # dev server on http://localhost:5173
 pnpm api:dev             # API on http://localhost:3001 (PORT to change it); GET /api/health
+pnpm db:up               # local Postgres in Docker (db:down keeps the data, db:destroy deletes it)
+pnpm db:migrate          # apply apps/api/drizzle; db:seed loads the 25 users; db:generate after a schema edit
 pnpm build               # tsc -b + vite build
 pnpm typecheck           # tsc -b
 pnpm lint                # oxlint --deny-warnings
