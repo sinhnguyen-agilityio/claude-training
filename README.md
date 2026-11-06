@@ -56,6 +56,25 @@ curl localhost:3001/api/health    # {"status":"ok"}
 pnpm test                         # runs the web and the API tests
 ```
 
+## Local database
+
+Prerequisite: **Docker Desktop** (running). Compose starts only Postgres 16; the API runs on the
+host with `pnpm api:dev`. The data lives in the named volume `pgdata`.
+
+```bash
+cp .env.example .env   # once; the defaults work as they are
+pnpm db:up             # docker compose up -d --wait db (returns once it is healthy)
+pnpm db:down           # stop the container, keep the data
+pnpm db:destroy        # stop the container and delete the data (down -v)
+```
+
+The connection string is `DATABASE_URL` in `.env.example`
+(`postgres://app:app@localhost:5432/users_dev`). If port 5432 is taken, set `DB_PORT=5433` in
+`.env` and use that port in `DATABASE_URL`. The port is published on `127.0.0.1` only.
+
+`POSTGRES_USER`, `POSTGRES_PASSWORD` and `POSTGRES_DB` apply only when the volume is first
+created. After changing them in `.env`, run `pnpm db:destroy` and then `pnpm db:up`.
+
 ## Deploy
 
 [.github/workflows/deploy.yml](.github/workflows/deploy.yml) publishes `main` to GitHub Pages
@@ -79,6 +98,9 @@ Setting it up once: **Settings → Pages → Source: GitHub Actions**.
 | -------------------- | --------------------------------------------- |
 | `pnpm dev`           | Start the dev server                          |
 | `pnpm api:dev`       | Start the API (Express) on port 3001          |
+| `pnpm db:up`         | Start the local Postgres (Docker)             |
+| `pnpm db:down`       | Stop it, keep the data                        |
+| `pnpm db:destroy`    | Stop it and delete the data                   |
 | `pnpm build`         | Type-check and build for production           |
 | `pnpm preview`       | Serve the production build                    |
 | `pnpm typecheck`     | Run the TypeScript compiler                   |

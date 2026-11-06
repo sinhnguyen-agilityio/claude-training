@@ -8,6 +8,8 @@ All notable changes to this project are listed here, newest first. The format fo
 
 ### Added
 
+- `docker-compose.yml` with a `db` service (Postgres 16, healthcheck, named volume `pgdata`),
+  `.env.example`, and the scripts `pnpm db:up`, `pnpm db:down` and `pnpm db:destroy` (#36).
 - API structure: the layer folders under `apps/api/src`, `loadEnv()` for `PORT`, `DATABASE_URL`,
   `ALLOW_RESET` and `NODE_ENV`, JSON errors for an unknown route (404), invalid JSON (400) and
   unexpected errors (500), `validate()`, `asyncHandler`, the shared constants and one log line per
