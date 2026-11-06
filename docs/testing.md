@@ -12,7 +12,10 @@ How tests are written and run. Read this before adding or changing a test.
   creates a Postgres schema named `test_<random>`, applies the migrations in it (the `"public".`
   prefix drizzle-kit writes on enum types is rewritten to that schema), seeds the 25 users when
   `seed: true`, and drops the schema in `afterAll`. Call it once at the top of the file, with
-  top-level `await`, and use the returned `db`. Files running in parallel never see each other's
+  top-level `await`, and use the returned `db`. To test a route, pass it on:
+  `request(createApp({ db: testDb.db })).get('/api/users')` (see `routes/users.list.test.ts`; the
+  tests that need rows of their own, such as `users.search.test.ts`, start from an empty schema and
+  insert them). Files running in parallel never see each other's
   rows. It reads `DATABASE_URL` and falls back to the local default of `.env.example`. A test of
   the migrations themselves (`db/migrate.test.ts`) creates a whole throwaway database instead,
   because the migration journal is per database. A run that is killed can leave a `test_*` schema

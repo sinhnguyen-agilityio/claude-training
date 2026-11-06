@@ -12,6 +12,8 @@ export const usersQuerySchema = z.object({
   q: z
     .string()
     .trim()
+    // PostgreSQL cannot store or compare a NUL byte in text, so it would answer 500 (SPEC §4: 400).
+    .refine((value) => !value.includes('\0'), 'Search text contains an invalid character')
     .optional()
     .transform((value) => value || undefined),
   role: z.enum(USER_ROLES).optional(),

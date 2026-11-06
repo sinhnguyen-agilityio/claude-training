@@ -47,13 +47,15 @@ pnpm --filter @app/web exec playwright install chromium
 
 ## API
 
-`apps/api` is an Express 5 app (TypeScript, run with `tsx`). For now it answers one route, the
-health check. The browser app still uses the MSW mock until #46. The API needs `DATABASE_URL`
-(see [Local database](#local-database)) and reads it from `.env` at the repo root.
+`apps/api` is an Express 5 app (TypeScript, run with `tsx`). For now it answers the health check
+and `GET /api/users`. The browser app still uses the MSW mock until #46. The API needs
+`DATABASE_URL` (see [Local database](#local-database)) and reads it from `.env` at the repo root.
 
 ```bash
 pnpm api:dev                      # listens on PORT (default 3001): "API listening on :3001"
 curl localhost:3001/api/health    # {"status":"ok"}
+curl "localhost:3001/api/users?q=lee&role=admin&sort=name&order=asc&page=1&pageSize=10"
+                                  # { data, total, page, pageSize } (needs db:migrate and db:seed)
 pnpm test                         # runs the web and the API tests
 ```
 
