@@ -46,10 +46,24 @@ carry the detail; this list is the map.
 
 1. Start every piece of work from an issue, written with `/ticket-pack`, `/start-ticket` or
    `/bug-report`. The formats live in those skills; there are no issue or PR template files.
-2. Branch from `main`: `feat/`, `fix/`, `chore/` or `docs/`, then `<issue>-<slug>`. Never commit to
-   `main` directly.
-3. Use conventional commit prefixes (`feat:`, `fix:`, `test:`, `chore:`, `docs:`). Tag the SPEC
-   feature where relevant, e.g. `feat: add edit user page ... (F4)`.
+2. Branch from `main`, named `<type>/<issue number>-<slug>`. The type is one of the commit types
+   in rule 3, and the slug is at most 5 words of lowercase letters and digits joined by `-`:
+   `^(feat|fix|docs|test|refactor|perf|ci|build|chore|revert)/[0-9]+-[a-z0-9]+(-[a-z0-9]+){0,4}$`,
+   for example `feat/12-add-export`. Never commit to `main` directly. Branches under `claude/` and
+   `dependabot/` are exempt (bots create them).
+3. Write commits as [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/), header
+   `type(scope)!: description`:
+   - **type**: `feat`, `fix`, `docs`, `test`, `refactor`, `perf`, `ci`, `build`, `chore` or
+     `revert`. The scope is optional, and `!` marks a breaking change (a `BREAKING CHANGE:` footer
+     is allowed too).
+   - **subject**: at most 72 characters for the whole header, imperative mood, the description
+     starts with a lowercase letter, one space after the colon, no trailing period.
+   - **tags**: an optional SPEC feature and issue number at the end, e.g.
+     `feat: add edit user page (F4)` or `chore: tidy hooks (#32)`.
+   - **body**: optional, after one blank line. Its line length is not checked.
+
+   Messages git writes itself (`Merge `, `Revert "`, `fixup! `, `squash! `) are not checked.
+
 4. Open a pull request (a merge request on GitLab) that references the issue (`Closes #<n>`), in
    the format of `/pr-description`: what, why, assumptions, how tested, risk, evidence.
 5. Before asking for review, run the [checks](#checks).
@@ -76,10 +90,18 @@ A Husky pre-commit hook (`.husky/pre-commit`) runs the checks on the staged file
 the app and the hook tests when `.claude/` changed. It is installed by `pnpm install`, so run that
 once after cloning. Don't skip it with `--no-verify`.
 
-The same Husky setup enforces rule 2: the pre-commit hook refuses a commit while `main` or `master`
-is checked out, and `.husky/pre-push` refuses a push whose target is `main` or `master`. Git runs
-them in the checkout or worktree you are working in, so a feature branch (or a worktree on one) is
-never blocked.
+The same Husky setup enforces rules 2 and 3:
+
+- `.husky/pre-commit` refuses a commit while `main` or `master` is checked out.
+- `.husky/commit-msg` refuses a message that breaks the commit format of rule 3.
+- `.husky/pre-push` refuses a push whose target is `main` or `master`, and a push of a branch whose
+  name does not match the rule 2 regex. Tags and branch deletions are not checked, so an old branch
+  with a non-matching name can still be deleted.
+
+The checks live in [.claude/hooks/convention.mjs](.claude/hooks/convention.mjs), which
+`block-forbidden.mjs` also uses to stop Claude from creating a branch with a bad name. Git runs the
+hooks in the checkout or worktree you are working in, so a feature branch (or a worktree on one)
+is never blocked.
 
 ## GitHub and GitLab
 

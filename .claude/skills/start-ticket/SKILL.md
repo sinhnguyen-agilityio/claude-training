@@ -80,7 +80,10 @@ Propose `<type>/<n>-<slug>`:
 
 - `fix` for a bug, `chore` or `docs` when only tooling or docs change, `feat` otherwise (from the
   label, or the answer in step 1);
-- the slug is a kebab-case form of the title, at most 5 words.
+- the slug is a kebab-case form of the title, at most 5 words of lowercase letters and digits
+  (`WORKFLOW.md` rule 2). The whole name must match
+  `^(feat|fix|docs|test|refactor|perf|ci|build|chore|revert)/[0-9]+-[a-z0-9]+(-[a-z0-9]+){0,4}$`,
+  or `.husky/pre-push` and `block-forbidden` reject it. Example: `feat/12-add-export`.
 
 Ask: the current checkout, or a new worktree (for parallel work, see `WORKFLOW.md` → Parallel
 work: run `pnpm install` there and use `E2E_PORT`). If the branch already exists, offer to switch to

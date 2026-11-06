@@ -92,16 +92,26 @@ Run `claude` from the repository root. It picks up the configuration below autom
 
 Configured in [.claude/settings.json](.claude/settings.json), with scripts in [.claude/hooks/](.claude/hooks/):
 
-| Hook                                                         | Event         | What it does                                                                                               |
-| ------------------------------------------------------------ | ------------- | ---------------------------------------------------------------------------------------------------------- |
-| [block-forbidden.mjs](.claude/hooks/block-forbidden.mjs)     | `PreToolUse`  | Blocks risky git commands run through Bash/PowerShell (force push, hard reset, work on protected branches) |
-| [protect-files.mjs](.claude/hooks/protect-files.mjs)         | `PreToolUse`  | Blocks edits to `pnpm-lock.yaml`, `src/mocks/seed.ts` and the coverage `thresholds` in `vite.config.ts`    |
-| [format-on-edit.mjs](.claude/hooks/format-on-edit.mjs)       | `PostToolUse` | Runs Prettier on files Claude edits or writes                                                              |
-| [typecheck-on-edit.mjs](.claude/hooks/typecheck-on-edit.mjs) | `PostToolUse` | Runs `tsc -b` after a `.ts`/`.tsx` edit and feeds type errors back to Claude                               |
-| [notify-on-finish.mjs](.claude/hooks/notify-on-finish.mjs)   | `Stop`        | Shows a Windows toast and plays a sound when Claude finishes a turn                                        |
+| Hook                                                         | Event         | What it does                                                                                                                                              |
+| ------------------------------------------------------------ | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [block-forbidden.mjs](.claude/hooks/block-forbidden.mjs)     | `PreToolUse`  | Blocks risky git commands run through Bash/PowerShell (force push, hard reset, work on protected branches, a new branch whose name breaks the convention) |
+| [protect-files.mjs](.claude/hooks/protect-files.mjs)         | `PreToolUse`  | Blocks edits to `pnpm-lock.yaml`, `src/mocks/seed.ts` and the coverage `thresholds` in `vite.config.ts`                                                   |
+| [format-on-edit.mjs](.claude/hooks/format-on-edit.mjs)       | `PostToolUse` | Runs Prettier on files Claude edits or writes                                                                                                             |
+| [typecheck-on-edit.mjs](.claude/hooks/typecheck-on-edit.mjs) | `PostToolUse` | Runs `tsc -b` after a `.ts`/`.tsx` edit and feeds type errors back to Claude                                                                              |
+| [notify-on-finish.mjs](.claude/hooks/notify-on-finish.mjs)   | `Stop`        | Shows a Windows toast and plays a sound when Claude finishes a turn                                                                                       |
 
 If a `PreToolUse` script cannot be loaded, the hook blocks the call (fails closed); the others only
 report an error.
+
+The Husky git hooks in [.husky/](.husky/) apply to everyone, not only to Claude:
+
+| Git hook     | What it does                                                                                         |
+| ------------ | ---------------------------------------------------------------------------------------------------- |
+| `pre-commit` | Refuses commits on `main`/`master`; runs lint-staged, and the hook tests when `.claude/` changed     |
+| `commit-msg` | Refuses a commit message that breaks `type(scope)!: description` ([WORKFLOW.md](WORKFLOW.md) rule 3) |
+| `pre-push`   | Refuses a push to `main`/`master` and a branch name that is not `<type>/<n>-<slug>` (rule 2)         |
+
+The commit and branch rules are in [convention.mjs](.claude/hooks/convention.mjs), shared with `block-forbidden.mjs`.
 
 ### Skills
 
@@ -163,7 +173,7 @@ change history is in [CHANGELOG.md](CHANGELOG.md); longer notes per feature are 
 .
 ├── .claude/          # Claude Code settings, hooks, skills and subagents
 ├── .github/          # CI and Claude workflows, CODEOWNERS
-├── .husky/           # Git hooks: pre-commit and pre-push
+├── .husky/           # Git hooks: pre-commit, commit-msg and pre-push
 ├── docs/             # SPEC.md, architecture, testing, release notes
 ├── src/              # App code (app, features, mocks, shared, test)
 ├── tests/e2e/        # Playwright specs

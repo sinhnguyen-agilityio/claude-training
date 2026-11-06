@@ -84,12 +84,14 @@ BLOCKED stops here.
 
 `main` takes no direct commits, so the release goes through a PR:
 
-1. Create `chore/release-<x.y.z>` from `main`.
+1. Create the release branch from `main`. It needs an issue number and no dots, to match the
+   `WORKFLOW.md` rule 2 regex: `chore/<n>-release-<x>-<y>-<z>`, for example
+   `chore/60-release-1-2-0` (open an issue for the release first).
 2. In `CHANGELOG.md`, rename `## [Unreleased]` to `## [<x.y.z>] - <YYYY-MM-DD>` and add an empty
    `## [Unreleased]` above it. Add the link reference at the bottom, above the older ones:
    `[<x.y.z>]: https://github.com/sinhnguyen-agilityio/claude-training/tree/v<x.y.z>`. Set
    `package.json` `version` to `<x.y.z>`.
-3. Commit `chore: release <x.y.z>`, push, and open the PR (`/ship` steps 4–5).
+3. Commit `chore: release <x.y.z>` (a valid rule 3 header, and use it as the PR title), push, and open the PR (`/ship` steps 4–5).
 4. After the PR is merged, find the merge commit (`gh pr view <n> --json mergeCommit`), then:
 
    ```bash

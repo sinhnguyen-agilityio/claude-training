@@ -9,6 +9,7 @@
 import { readFileSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 import { resolve } from 'node:path'
+import { checkBranchName } from './convention.mjs'
 
 const PROTECTED_BRANCHES = ['main', 'master']
 
@@ -102,7 +103,61 @@ const RULES = [
         : null
     },
   },
+
+  // --- Branch names (WORKFLOW.md rule 2). .husky/pre-push checks the same rule at push time ---
+  {
+    group: 'branch-name',
+    check: (c) => {
+      const name = newBranchName(c)
+      return name === null ? null : (checkBranchName(name)?.message ?? null)
+    },
+  },
 ]
+
+// The name of the branch a git command creates or renames to, or null when it creates none.
+function newBranchName({ sub, args, positionals }) {
+  const after = (flags) => {
+    const i = args.findIndex((a) => flags.includes(a.split('=')[0]))
+    if (i === -1) return null
+    return args[i].includes('=') ? args[i].split('=').slice(1).join('=') : (args[i + 1] ?? null)
+  }
+  if (sub === 'checkout') return after(['-b', '-B', '--orphan'])
+  if (sub === 'switch') return after(['-c', '-C', '--create', '--force-create', '--orphan'])
+  if (sub === 'worktree') return positionals[0] === 'add' ? after(['-b', '-B']) : null
+  if (sub !== 'branch') return null
+
+  // `git branch <name> [<start>]` creates. Listing, deleting, upstream and description options do not.
+  const NOT_CREATING = ['--list', '--delete', '--show-current', '--contains', '--no-contains']
+  const NOT_CREATING_PREFIX = [
+    '--merged',
+    '--no-merged',
+    '--set-upstream-to',
+    '--unset-upstream',
+    '--points-at',
+    '--sort',
+    '--format',
+    '--column',
+    '--abbrev',
+  ]
+  const NOT_CREATING_SHORT = ['d', 'D', 'l', 'a', 'r', 'v', 'u']
+  if (
+    args.some(
+      (a) =>
+        NOT_CREATING.includes(a) ||
+        NOT_CREATING_PREFIX.some((p) => a.startsWith(p)) ||
+        (/^-[a-zA-Z]+$/.test(a) && NOT_CREATING_SHORT.some((s) => a.includes(s))),
+    )
+  ) {
+    return null
+  }
+  // -m/-M rename (`git branch -m [<old>] <new>`) and -c/-C copy: the new name is the last one.
+  const renames =
+    ['m', 'M', 'c', 'C'].some((s) => args.some((a) => /^-[a-zA-Z]+$/.test(a) && a.includes(s))) ||
+    args.includes('--move') ||
+    args.includes('--copy')
+  if (renames) return positionals[positionals.length - 1] ?? null
+  return positionals[0] ?? null
+}
 
 const BRANCH_UNKNOWN =
   'Cannot determine the current branch (not a git repo, detached HEAD, or git error), so this is blocked to be safe.'
