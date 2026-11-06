@@ -5,8 +5,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project
 
 User Management Dashboard: a React 19 + TypeScript (strict) CRUD app for users, built as a
-training project. There is no backend. An MSW mock REST API runs in the browser in **every**
-build, production included, and persists to `localStorage`. `docs/SPEC.md` is the source of truth
+training project. The backend is an Express + PostgreSQL REST API (`apps/api`, being added in
+epic #31). Until #46 merges, the browser still runs an MSW mock that persists to `localStorage`,
+in **every** build, production included. `docs/SPEC.md` is the source of truth
 for the data model (§3), the API contract (§4) and the acceptance criteria for features F1–F8
 (§5). Code comments cite it as `SPEC F4`, `SPEC §4` and so on.
 
@@ -71,12 +72,13 @@ Read these on demand, not for every task:
 - Never skip the pre-commit hook (`--no-verify`), and never lower the 80% coverage threshold to
   get a run passing.
 - Never change validation rules on only one side. Edit `schema.ts` / `query.ts`, which both the
-  form and the mock API import.
+  form and the API import (until #46, the API is the mock handlers).
 - Never change the existing seed users in `mocks/seed.ts` casually. Unit and E2E tests rely on
   their exact values.
-- Never stop the MSW worker from starting in production builds (e.g. by gating it on
-  `import.meta.env.DEV`). It is the only API (SPEC §2). MSW's own `'bypass'` options, such as
-  `onUnhandledFrame: 'bypass'` in `mocks/browser.ts`, are intended.
+- Never import MSW in app code outside tests and `src/mocks/`. Until #46 removes the mock, the
+  browser worker in `mocks/browser.ts` is the only API, so never stop it from starting in
+  production builds (e.g. by gating it on `import.meta.env.DEV`). MSW's own `'bypass'`
+  options, such as `onUnhandledFrame: 'bypass'` in `mocks/browser.ts`, are intended.
 - Never mock TanStack Query hooks or `fetch` in tests. Network goes through the MSW node server,
   overridden with `server.use(...)`. Tests of pages and routes render the real route tree with
   `renderRoute()`. Shared UI components and hooks, which have no route, may be rendered directly.
@@ -89,5 +91,5 @@ Read these on demand, not for every task:
 - Never put a "Generated with Claude Code" or `Co-Authored-By` line in commit messages or MR/PR
   descriptions.
 - Never use `any`, enums or parameter properties in app code.
-- Never add features listed as out of scope in SPEC §7 (auth, a real backend, selecting users
+- Never add features listed as out of scope in SPEC §7 (auth, selecting users
   across pages, import, i18n, avatars; CSV export is F8) without an issue that changes the spec.

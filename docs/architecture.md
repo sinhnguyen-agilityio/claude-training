@@ -2,6 +2,9 @@
 
 How the app is wired. Read this before changing the API layer, the cache, list state or the forms.
 
+> The request flow below is the current state: the browser runs the MSW mock. Epic #31 replaces
+> it with an Express + PostgreSQL API, and #46 rewrites this page.
+
 Request flow: page → `features/users/api/hooks.ts` (TanStack Query) → `api/client.ts` (`fetch`)
 → MSW handler (`mocks/handlers.ts`) → repository (`mocks/repository.ts`) → `localStorage`.
 

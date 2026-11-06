@@ -25,6 +25,8 @@ All notable changes to this project are listed here, newest first. The format fo
 
 ### Changed
 
+- SPEC §1, §2, §4 and §7, CLAUDE.md and the docs now describe the Express + PostgreSQL API that replaces
+  the MSW mock (epic #31). The code still runs the mock until #46 (#32).
 - `pr-walkthrough` shows each file's diff on the page, and the context7 MCP server is pinned to an exact version.
 - `pr-description`: How tested is now manual steps a reviewer can follow (setup, steps with expected results, edge cases) instead of a table of passed commands.
 - Fixes to the workflow skills found while running #26: `triage-review` also reads conversation
