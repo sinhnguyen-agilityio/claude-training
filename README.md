@@ -45,6 +45,17 @@ Open <http://localhost:5173>. For E2E tests, install the browser once:
 pnpm --filter @app/web exec playwright install chromium
 ```
 
+## API
+
+`apps/api` is an Express 5 app (TypeScript, run with `tsx`). For now it answers one route, the
+health check. The browser app still uses the MSW mock until #46.
+
+```bash
+pnpm api:dev                      # listens on PORT (default 3001): "API listening on :3001"
+curl localhost:3001/api/health    # {"status":"ok"}
+pnpm test                         # runs the web and the API tests
+```
+
 ## Deploy
 
 [.github/workflows/deploy.yml](.github/workflows/deploy.yml) publishes `main` to GitHub Pages
@@ -67,12 +78,13 @@ Setting it up once: **Settings → Pages → Source: GitHub Actions**.
 | Command              | What it does                                  |
 | -------------------- | --------------------------------------------- |
 | `pnpm dev`           | Start the dev server                          |
+| `pnpm api:dev`       | Start the API (Express) on port 3001          |
 | `pnpm build`         | Type-check and build for production           |
 | `pnpm preview`       | Serve the production build                    |
 | `pnpm typecheck`     | Run the TypeScript compiler                   |
 | `pnpm lint`          | Lint with oxlint                              |
 | `pnpm format`        | Format with Prettier                          |
-| `pnpm test`          | Run unit/component tests once                 |
+| `pnpm test`          | Run the web and API tests once                |
 | `pnpm test:watch`    | Run tests in watch mode                       |
 | `pnpm test:coverage` | Run tests with a coverage report              |
 | `pnpm e2e`           | Build, serve and run the Playwright E2E tests |
@@ -176,6 +188,7 @@ change history is in [CHANGELOG.md](CHANGELOG.md); longer notes per feature are 
 ├── .husky/           # Git hooks: pre-commit, commit-msg and pre-push
 ├── docs/             # SPEC.md, architecture, testing, release notes
 ├── apps/web/         # The React app: src (app, features, mocks, shared, test), public, tests/e2e
+├── apps/api/         # The Express API: src/app.ts (createApp), src/server.ts (listen)
 ├── packages/shared/  # @app/shared: User schemas, list query schema, the 25 seed users
 ├── CHANGELOG.md
 ├── CLAUDE.md

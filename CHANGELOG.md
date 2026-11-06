@@ -8,6 +8,9 @@ All notable changes to this project are listed here, newest first. The format fo
 
 ### Added
 
+- `apps/api`: an Express 5 package with `createApp()`, a `listen` entry on `PORT` (default 3001)
+  and `GET /api/health`, tested with supertest. `pnpm api:dev` starts it, and `pnpm test` and
+  `pnpm test:coverage` now run the API tests too (#34).
 - Commit message and branch name convention, written in `WORKFLOW.md` rules 2 and 3 and enforced
   by the `.husky/commit-msg` hook, `.husky/pre-push` and `block-forbidden.mjs`, which share
   `.claude/hooks/convention.mjs` (#51).
