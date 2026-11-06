@@ -3,14 +3,15 @@
 A small React + TypeScript CRUD app for managing users. It is also a training repository for
 learning to build software with [Claude Code](https://claude.com/claude-code): the app is the
 subject, and the Claude Code configuration (hooks, skills, subagents) is what the training is
-about. There is no backend; data comes from a mock REST API ([MSW](https://mswjs.io)) persisted in
-`localStorage`.
+about. The backend is moving from a mock REST API ([MSW](https://mswjs.io)) persisted in
+`localStorage` to an Express + PostgreSQL API (epic #31). Until #46 merges, the app still runs on
+the mock.
 
 The full spec and acceptance criteria are in [docs/SPEC.md](docs/SPEC.md).
 
 **Live demo:** <https://sinhnguyen-agilityio.github.io/claude-training/>. It shows the latest `main`
-and is deployed after CI passes. Data is kept in your browser's `localStorage`, so each visitor
-has their own copy.
+and is deployed after CI passes. For now the data is kept in your browser's `localStorage`, so
+each visitor has their own copy; epic #31 moves it to a shared database.
 
 ## Tech stack
 

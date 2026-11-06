@@ -1,22 +1,22 @@
 # User Management Dashboard — Specification
 
-Status: **v1.1 draft** · Owner: Sinh Nguyen
+Status: **v1.2 draft** · Owner: Sinh Nguyen
 
 ## 1. Purpose
 
 A small single-page app where an operator manages users (list, search, create, view, edit,
-delete). It is a training project: the scope is deliberately small and there is no real
-backend.
+delete). It is a training project: the scope is deliberately small. The backend is a small
+Express API (see §2).
 
 ## 2. Architecture decisions
 
-| Decision     | Choice                                             | Reason                                                                                                               |
-| ------------ | -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| Backend      | None. A mock REST API (MSW) runs in the browser.   | Scope is front-end only. The UI still makes real `fetch` calls, so swapping in a real API later needs no UI changes. |
-| Persistence  | `localStorage`, behind a repository module         | Data survives reloads. SQLite was considered and dropped because it needs a server.                                  |
-| Validation   | One Zod schema shared by the form and the mock API | The client and the "server" can never disagree on the rules.                                                         |
-| Auth         | Out of scope                                       | Keeps the scope small.                                                                                               |
-| Mock in prod | MSW runs in every build, including production      | There is no real backend, so the mock _is_ the API (and `pnpm e2e` runs against the production build).               |
+| Decision    | Choice                                                                                         | Reason                                                                                                                                              |
+| ----------- | ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Backend     | Node.js + Express (`apps/api`), a REST API under `/api`                                        | The UI already makes real `fetch` calls, so the API replaces the mock without UI changes.                                                           |
+| Persistence | PostgreSQL through Drizzle ORM. Docker Compose with a named volume locally, Neon in production | Data survives restarts and is shared by every visitor. SQLite was dropped because serverless hosting has no durable disk.                           |
+| Validation  | One Zod schema shared by the form and the API                                                  | The client and the server can never disagree on the rules.                                                                                          |
+| Auth        | Out of scope                                                                                   | Keeps the scope small.                                                                                                                              |
+| MSW         | Vitest only (target)                                                                           | Tests keep the MSW node server. Until the frontend integration ticket (#46) merges, browsers still run the MSW mock and `pnpm e2e` runs against it. |
 
 ## 3. Data model — `User`
 
@@ -32,7 +32,7 @@ backend.
 | `createdAt` | ISO 8601 string                   | Set by the API                                                                                                                              |
 | `updatedAt` | ISO 8601 string                   | Set by the API on every update                                                                                                              |
 
-## 4. Mock API contract
+## 4. API contract
 
 | Method   | Path                | Success                               | Errors                    |
 | -------- | ------------------- | ------------------------------------- | ------------------------- |
@@ -71,9 +71,12 @@ still 200, and an id that matches no user is reported as `reason: "not_found"`.
 
 Error body: `{ message: string, fieldErrors?: Record<string, string> }`.
 
-On first load the API seeds a fixed set of 25 users (hard-coded, so tests can rely on exact
-values). `POST /api/reset` restores the seed data. Every mock response has a small fixed delay
-(~300 ms) so loading states are visible; tests wait on content, never on fixed timeouts.
+`pnpm db:seed` seeds a fixed set of 25 users (hard-coded, so tests can rely on exact values), and
+`POST /api/reset` restores them when the server runs with `ALLOW_RESET=true` (otherwise it
+answers 404). The API adds no artificial delay. Tests wait on content, never on fixed timeouts.
+
+Until #46 merges, the MSW mock stands in for the API: it seeds the 25 users on first load, answers
+`POST /api/reset` always, and delays every response by about 300 ms.
 
 ## 5. Features and acceptance criteria
 
@@ -181,5 +184,5 @@ values). `POST /api/reset` restores the seed data. Every mock response has a sma
 
 ## 7. Out of scope
 
-Authentication and permissions, a real backend, selecting users across pages, import, i18n,
+Authentication and permissions, selecting users across pages, import, i18n,
 avatars. (CSV export is in scope as F8; import and other export formats are not.)

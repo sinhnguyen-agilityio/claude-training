@@ -2,6 +2,9 @@
 
 How tests are written and run. Read this before adding or changing a test.
 
+> Until #46 merges, E2E runs against the browser's MSW mock. After it, MSW stays only as the
+> Vitest network layer and E2E runs against the Express API and PostgreSQL.
+
 - `renderRoute(path)` from `src/test/renderWithProviders.tsx` renders the **real route tree** and
   returns `{ user, router, queryClient }`. Requests go to the MSW node server (`mocks/node.ts`);
   override one endpoint with `server.use(http.…)`. Handlers are reset after each test, and
