@@ -11,24 +11,27 @@ import { fileURLToPath } from 'node:url'
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const settings = join(repo, '.claude', 'settings.json')
 
-// Expected registrations: event -> [matcher, script, exit code when the script cannot be loaded].
-const EXPECTED = {
-  PreToolUse: ['Bash|PowerShell', 'block-forbidden.mjs', 2], // the guard fails closed
-  Stop: [undefined, 'notify-on-finish.mjs', 1],
-  PostToolUse: ['Edit|MultiEdit|Write', 'format-on-edit.mjs', 1],
-}
+// Expected registrations, in order: [event, matcher, script, exit code when the script cannot be loaded].
+const EXPECTED = [
+  ['PreToolUse', 'Bash|PowerShell', 'block-forbidden.mjs', 2], // the guard fails closed
+  ['PreToolUse', 'Edit|MultiEdit|Write', 'protect-files.mjs', 2], // so does the file protection
+  ['Stop', undefined, 'notify-on-finish.mjs', 1],
+  ['PostToolUse', 'Edit|MultiEdit|Write', 'format-on-edit.mjs', 1],
+  ['PostToolUse', 'Edit|MultiEdit|Write', 'typecheck-on-edit.mjs', 1],
+]
 
 const COMMAND = /^node -e "(?<code>[^"]+)" (?<script>\S+) (?<failCode>\d+)$/
 
 function registrations(settingsFile) {
   const { hooks } = JSON.parse(readFileSync(settingsFile, 'utf8'))
-  return Object.entries(hooks).map(([event, groups]) => {
-    assert.equal(groups.length, 1, `${event}: one matcher group`)
-    assert.equal(groups[0].hooks.length, 1, `${event}: one hook`)
-    const match = COMMAND.exec(groups[0].hooks[0].command)
-    assert.ok(match, `${event}: command has the form node -e "<loader>" <script> <failCode>`)
-    return { event, matcher: groups[0].matcher, ...match.groups }
-  })
+  return Object.entries(hooks).flatMap(([event, groups]) =>
+    groups.map((group) => {
+      assert.equal(group.hooks.length, 1, `${event}: one hook per matcher group`)
+      const match = COMMAND.exec(group.hooks[0].command)
+      assert.ok(match, `${event}: command has the form node -e "<loader>" <script> <failCode>`)
+      return { event, matcher: group.matcher, ...match.groups }
+    }),
+  )
 }
 
 // Runs a registration's loader the way the shell would, with argv and env set explicitly.
@@ -45,15 +48,15 @@ function load({ code, script, failCode }, { projectDir, input }) {
 
 const forcePush = JSON.stringify({ tool_name: 'Bash', tool_input: { command: 'git push --force' } })
 const gitStatus = JSON.stringify({ tool_name: 'Bash', tool_input: { command: 'git status' } })
-const guard = registrations(settings).find((r) => r.event === 'PreToolUse')
+const guard = registrations(settings).find((r) => r.script.endsWith('block-forbidden.mjs'))
 
 test('registers the expected hooks, matchers and fail codes', () => {
-  const actual = Object.fromEntries(
-    registrations(settings).map((r) => [
-      r.event,
-      [r.matcher, r.script.split('/').at(-1), Number(r.failCode)],
-    ]),
-  )
+  const actual = registrations(settings).map((r) => [
+    r.event,
+    r.matcher,
+    r.script.split('/').at(-1),
+    Number(r.failCode),
+  ])
   assert.deepEqual(actual, EXPECTED)
 })
 

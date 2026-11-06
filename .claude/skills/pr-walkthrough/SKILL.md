@@ -34,13 +34,41 @@ see that the PR has moved on since. Then these sections:
 3. **Read in this order**: each file (or group of files) with a link to it on GitHub
    (`<repo>/blob/<head sha>/<path>`), its role, and what the reviewer should check there.
    Start with the entry point or the test that states the behaviour, not alphabetical order.
-4. **AC → test**: `AC | Test file / name | Level`.
-5. **Assumptions to confirm**: from the issue, each with the default that was taken.
-6. **Risks**: what could break, and where.
-7. **Verify locally**: the commands (`gh pr checkout <n>`, `pnpm install`, `pnpm dev`, and the
+4. **Code changes**: the actual diff, shown under each file in the reading order. See
+   [Showing the code changes](#showing-the-code-changes). Skip this section only when the PR
+   changes no code (for example, only images).
+5. **AC → test**: `AC | Test file / name | Level`.
+6. **Assumptions to confirm**: from the issue, each with the default that was taken.
+7. **Risks**: what could break, and where.
+8. **Verify locally**: the commands (`gh pr checkout <n>`, `pnpm install`, `pnpm dev`, and the
    steps to see the change).
 
 Keep the facts exact: file paths, test names and commands copied from the PR, never paraphrased.
+
+### Showing the code changes
+
+The page is the only thing some reviewers open, so it carries the diff itself. It cannot fetch
+from GitHub, so paste the diff text into the page.
+
+- Take it from `gh pr diff <n>`, split per file. Keep each hunk's `@@` header, so the line numbers
+  show. Show a changed line as `+` or `-` and a few lines of context around it, as in the diff.
+- Put each file's diff in a `<pre>` under that file's entry in "Read in this order", inside a
+  `<details>`. Open it (`open`) when the file has at most 60 changed lines; leave it closed with
+  the `+n / -n` counts in the `<summary>` when it has more. Never leave a diff unreachable.
+- Escape `&`, `<` and `>` as HTML entities. Color added lines with a green token and removed lines
+  with a red token, and keep the `+` and `-` characters, so the diff reads without color too.
+  Style them through the page's theme tokens, light and dark (see the `design` guide).
+- Let a long line scroll sideways inside its `<pre>` (`overflow-x: auto`). Never wrap it, never
+  clip it.
+- A new file has only added lines: show it in full when it has at most 60 lines, otherwise the part
+  that carries the behaviour (the function or block the reviewer must check), with a link to the
+  whole file at the head commit.
+- Skip the diff, and say so, for: the lock file, generated files, binary files and renames with no
+  edits. For a very large PR (over about 1,500 changed lines), show diffs for the files that carry
+  the behaviour and tests, and link the rest.
+- Copy the diff exactly. Do not reformat, abbreviate or "clean up" code in it, and do not invent
+  lines. If a diff is shortened, the page says where.
+- Right under the diff, one or two lines say what to check in it. Do not repeat the diff in words.
 
 ## 3. Publish
 
