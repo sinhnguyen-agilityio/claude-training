@@ -1,11 +1,20 @@
 import { seedUsers, userSchema } from '@app/shared'
+import { eq } from 'drizzle-orm'
 import request from 'supertest'
 import { describe, expect, it } from 'vitest'
 import { createApp } from '../app'
+import { users } from '../db/schema'
 import { createTestDb } from '../test/createTestDb'
 
 const testDb = await createTestDb({ seed: true })
 const app = createApp({ db: testDb.db })
+
+// A schema of its own whose users table is gone: every query fails the way a down database would.
+// It is built here, at the top of the file, where createTestDb() registers its cleanup and where
+// building a schema is not counted against the time limit of a test.
+const brokenDb = await createTestDb()
+await brokenDb.pool.query('DROP TABLE users')
+const brokenApp = createApp({ db: brokenDb.db })
 
 function seedUser(id: string) {
   const user = seedUsers.find((candidate) => candidate.id === id)
@@ -36,10 +45,25 @@ describe('GET /api/users/:id', () => {
   })
 
   it('answers the same user for the id in capital letters', async () => {
-    const res = await request(app).get(`/api/users/${anna.id.toUpperCase()}`)
+    // The seed ids are made of digits only, so upper-casing them changes nothing: use an id with letters.
+    const id = 'abcdef01-2345-4678-89ab-cdef01234567'
+    await testDb.db.insert(users).values({
+      id,
+      firstName: 'Hex',
+      lastName: 'Letters',
+      email: 'hex.letters@example.com',
+      role: 'viewer',
+    })
+    try {
+      expect(id.toUpperCase()).not.toBe(id)
 
-    expect(res.status).toBe(200)
-    expect(res.body).toEqual(anna)
+      const res = await request(app).get(`/api/users/${id.toUpperCase()}`)
+
+      expect(res.status).toBe(200)
+      expect(res.body.id).toBe(id)
+    } finally {
+      await testDb.db.delete(users).where(eq(users.id, id))
+    }
   })
 
   it('answers 404 { message: "User not found" } for a UUID nobody has (AC2)', async () => {
@@ -81,20 +105,10 @@ describe('GET /api/users/:id', () => {
   )
 
   it('still answers 500 without details for an error that is not a broken escape', async () => {
-    // A schema of its own whose users table is gone: the query fails the way a down database would.
-    // createTestDb() registers its cleanup with afterAll, which does nothing when it is called from
-    // inside a test, so this test drops the schema itself.
-    const broken = await createTestDb()
-    try {
-      await broken.pool.query('DROP TABLE users')
+    const res = await request(brokenApp).get(`/api/users/${anna.id}`)
 
-      const res = await request(createApp({ db: broken.db })).get(`/api/users/${anna.id}`)
-
-      expect(res.status).toBe(500)
-      expect(res.body).toEqual({ message: 'Internal server error' })
-    } finally {
-      await broken.drop()
-    }
+    expect(res.status).toBe(500)
+    expect(res.body).toEqual({ message: 'Internal server error' })
   })
 
   it('does not change the list (the id route comes after it)', async () => {
