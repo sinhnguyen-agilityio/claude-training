@@ -28,6 +28,9 @@ All notable changes to this project are listed here, newest first. The format fo
 
 ### Changed
 
+- The repo is a pnpm workspace: the app moved to `apps/web`, and the User schemas, the list query
+  schema and the 25 seed users moved to `packages/shared` (`@app/shared`), so the API can import
+  them. Root scripts, CI, deploy and the Claude hooks use the new paths; no behaviour change (#33).
 - SPEC §1, §2, §4 and §7, CLAUDE.md and the docs now describe the Express + PostgreSQL API that replaces
   the MSW mock (epic #31). The code still runs the mock until #46 (#32).
 - `pr-walkthrough` shows each file's diff on the page, and the context7 MCP server is pinned to an exact version.

@@ -23,14 +23,14 @@ pnpm lint                # oxlint --deny-warnings
 pnpm format              # prettier --write .   (format:check to verify)
 pnpm test                # vitest run (unit/component, jsdom)
 pnpm test:coverage       # enforces an 80% threshold on lines/statements/functions/branches
-pnpm e2e                 # Playwright: builds, serves the production build on :4173, runs tests/e2e
+pnpm e2e                 # Playwright: builds, serves the production build on :4173, runs apps/web/tests/e2e
 E2E_PORT=4174 pnpm e2e   # another port, so two worktrees can run E2E at the same time
 
 # Single tests
-pnpm vitest run src/features/users/pages/DeleteUser.test.tsx
-pnpm vitest run -t "part of the test name"
-pnpm exec playwright test tests/e2e/delete-user.spec.ts
-pnpm exec playwright install chromium   # once, before the first E2E run
+pnpm --filter @app/web exec vitest run src/features/users/pages/DeleteUser.test.tsx
+pnpm --filter @app/web exec vitest run -t "part of the test name"
+pnpm --filter @app/web exec playwright test tests/e2e/delete-user.spec.ts
+pnpm --filter @app/web exec playwright install chromium   # once, before the first E2E run
 ```
 
 A Husky pre-commit hook runs lint-staged (oxlint + Prettier on staged files). Husky also checks the
@@ -57,10 +57,12 @@ Read these on demand, not for every task:
 
 ## Conventions
 
-- Import through the `@/` alias (→ `src/`). TypeScript is strict with `noUncheckedIndexedAccess`
+- Import through the `@/` alias (→ `apps/web/src/`). TypeScript is strict with `noUncheckedIndexedAccess`
   and `erasableSyntaxOnly`.
-- Feature code lives in `src/features/users/` (api, components, hooks, pages, plus the schema,
-  query and label modules). Reusable UI, hooks and utils live in `src/shared/`.
+- Feature code lives in `apps/web/src/features/users/` (api, components, hooks, pages, plus the
+  label module). Reusable UI, hooks and utils live in `apps/web/src/shared/`. The User schemas,
+  the list query schema and the seed users live in `packages/shared` and are imported from
+  `@app/shared`.
 - Styling is Tailwind v4 (`@import 'tailwindcss'` in `index.css`, no config file). `Button`
   joins its variant classes and `className` without resolving conflicts, so a variant's color or
   hover classes can silently beat the caller's.
@@ -73,14 +75,14 @@ Read these on demand, not for every task:
   directly. All changes reach `main` through a pull request.
 - Never skip the pre-commit hook (`--no-verify`), and never lower the 80% coverage threshold to
   get a run passing.
-- Never change validation rules on only one side. Edit `schema.ts` / `query.ts`, which both the
+- Never change validation rules on only one side. Edit `packages/shared/src/schema.ts` / `query.ts`, which both the
   form and the API import (until #46, the API is the mock handlers).
-- Never change the existing seed users in `mocks/seed.ts` casually. Unit and E2E tests rely on
+- Never change the existing seed users in `packages/shared/src/seed.ts` casually. Unit and E2E tests rely on
   their exact values.
-- Never import MSW in app code outside tests and `src/mocks/`. Until #46 removes the mock, the
-  browser worker in `mocks/browser.ts` is the only API, so never stop it from starting in
+- Never import MSW in app code outside tests and `apps/web/src/mocks/`. Until #46 removes the mock, the
+  browser worker in `apps/web/src/mocks/browser.ts` is the only API, so never stop it from starting in
   production builds (e.g. by gating it on `import.meta.env.DEV`). MSW's own `'bypass'`
-  options, such as `onUnhandledFrame: 'bypass'` in `mocks/browser.ts`, are intended.
+  options, such as `onUnhandledFrame: 'bypass'` in `apps/web/src/mocks/browser.ts`, are intended.
 - Never mock TanStack Query hooks or `fetch` in tests. Network goes through the MSW node server,
   overridden with `server.use(...)`. Tests of pages and routes render the real route tree with
   `renderRoute()`. Shared UI components and hooks, which have no route, may be rendered directly.

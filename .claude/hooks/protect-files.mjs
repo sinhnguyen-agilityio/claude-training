@@ -2,8 +2,8 @@
 // Reads the tool call JSON from stdin. Exit 2 + reason on stderr blocks the edit; exit 0 allows.
 // To protect another file, add a rule to RULES below — no logic changes.
 //   - pnpm-lock.yaml: changed by pnpm only.
-//   - src/mocks/seed.ts: unit and E2E tests rely on the exact seed users.
-//   - vite.config.ts, when the edit touches the coverage `thresholds` (the 80% floor).
+//   - packages/shared/src/seed.ts: unit and E2E tests rely on the exact seed users.
+//   - apps/web/vite.config.ts, when the edit touches the coverage `thresholds` (the 80% floor).
 import { readFileSync, realpathSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -31,13 +31,13 @@ const RULES = [
   },
   {
     check: (rel) =>
-      rel === 'src/mocks/seed.ts'
-        ? 'The seed users in src/mocks/seed.ts are relied on by unit and E2E tests. Ask the user before changing them.'
+      rel === 'packages/shared/src/seed.ts'
+        ? 'The seed users in packages/shared/src/seed.ts are relied on by unit and E2E tests. Ask the user before changing them.'
         : null,
   },
   {
     check: (rel, input) =>
-      /^vite\.config\.[cm]?[jt]s$/.test(rel) &&
+      /^(apps[/]web[/])?vite\.config\.[cm]?[jt]s$/.test(rel) &&
       /thresholds/.test(`${addedText(input)}\n${removedText(input)}`)
         ? 'The 80% coverage threshold must not be lowered to get a run passing. Ask the user first.'
         : null,

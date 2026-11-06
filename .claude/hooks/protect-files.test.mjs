@@ -23,18 +23,18 @@ test('blocks pnpm-lock.yaml', () => {
 })
 
 test('blocks the seed users, also via a relative path', () => {
-  assert.equal(run({ file_path: 'src/mocks/seed.ts', new_string: 'x' }).status, 2)
+  assert.equal(run({ file_path: 'packages/shared/src/seed.ts', new_string: 'x' }).status, 2)
 })
 
 test('blocks a coverage threshold edit in vite.config.ts', () => {
   const r = run({
-    file_path: join(repo, 'vite.config.ts'),
+    file_path: join(repo, 'apps/web/vite.config.ts'),
     old_string: 'lines: 80',
     new_string: 'lines: 70',
   })
   assert.equal(r.status, 0, 'no `thresholds` word in the edit: allowed')
   const t = run({
-    file_path: join(repo, 'vite.config.ts'),
+    file_path: join(repo, 'apps/web/vite.config.ts'),
     old_string: 'thresholds: { lines: 80 }',
     new_string: 'thresholds: { lines: 70 }',
   })
@@ -43,15 +43,15 @@ test('blocks a coverage threshold edit in vite.config.ts', () => {
 
 test('blocks a MultiEdit that touches thresholds', () => {
   const r = run({
-    file_path: join(repo, 'vite.config.ts'),
+    file_path: join(repo, 'apps/web/vite.config.ts'),
     edits: [{ old_string: 'a', new_string: 'thresholds: {}' }],
   })
   assert.equal(r.status, 2)
 })
 
 test('allows other edits to vite.config.ts and ordinary files', () => {
-  assert.equal(run({ file_path: join(repo, 'vite.config.ts'), new_string: 'port: 1' }).status, 0)
-  assert.equal(run({ file_path: join(repo, 'src/main.tsx'), new_string: 'x' }).status, 0)
+  assert.equal(run({ file_path: join(repo, 'apps/web/vite.config.ts'), new_string: 'port: 1' }).status, 0)
+  assert.equal(run({ file_path: join(repo, 'apps/web/src/main.tsx'), new_string: 'x' }).status, 0)
 })
 
 test('allows files outside the repo and ignores bad input', () => {

@@ -42,7 +42,7 @@ pnpm dev
 Open <http://localhost:5173>. For E2E tests, install the browser once:
 
 ```bash
-pnpm exec playwright install chromium
+pnpm --filter @app/web exec playwright install chromium
 ```
 
 ## Deploy
@@ -95,7 +95,7 @@ Configured in [.claude/settings.json](.claude/settings.json), with scripts in [.
 | Hook                                                         | Event         | What it does                                                                                                                                              |
 | ------------------------------------------------------------ | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [block-forbidden.mjs](.claude/hooks/block-forbidden.mjs)     | `PreToolUse`  | Blocks risky git commands run through Bash/PowerShell (force push, hard reset, work on protected branches, a new branch whose name breaks the convention) |
-| [protect-files.mjs](.claude/hooks/protect-files.mjs)         | `PreToolUse`  | Blocks edits to `pnpm-lock.yaml`, `src/mocks/seed.ts` and the coverage `thresholds` in `vite.config.ts`                                                   |
+| [protect-files.mjs](.claude/hooks/protect-files.mjs)         | `PreToolUse`  | Blocks edits to `pnpm-lock.yaml`, `packages/shared/src/seed.ts` and the coverage `thresholds` in `apps/web/vite.config.ts`                                |
 | [format-on-edit.mjs](.claude/hooks/format-on-edit.mjs)       | `PostToolUse` | Runs Prettier on files Claude edits or writes                                                                                                             |
 | [typecheck-on-edit.mjs](.claude/hooks/typecheck-on-edit.mjs) | `PostToolUse` | Runs `tsc -b` after a `.ts`/`.tsx` edit and feeds type errors back to Claude                                                                              |
 | [notify-on-finish.mjs](.claude/hooks/notify-on-finish.mjs)   | `Stop`        | Shows a Windows toast and plays a sound when Claude finishes a turn                                                                                       |
@@ -175,8 +175,8 @@ change history is in [CHANGELOG.md](CHANGELOG.md); longer notes per feature are 
 ├── .github/          # CI and Claude workflows, CODEOWNERS
 ├── .husky/           # Git hooks: pre-commit, commit-msg and pre-push
 ├── docs/             # SPEC.md, architecture, testing, release notes
-├── src/              # App code (app, features, mocks, shared, test)
-├── tests/e2e/        # Playwright specs
+├── apps/web/         # The React app: src (app, features, mocks, shared, test), public, tests/e2e
+├── packages/shared/  # @app/shared: User schemas, list query schema, the 25 seed users
 ├── CHANGELOG.md
 ├── CLAUDE.md
 ├── loop.md           # /loop prompt for watching an open PR
