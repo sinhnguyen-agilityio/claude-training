@@ -8,6 +8,10 @@ All notable changes to this project are listed here, newest first. The format fo
 
 ### Added
 
+- API structure: the layer folders under `apps/api/src`, `loadEnv()` for `PORT`, `DATABASE_URL`,
+  `ALLOW_RESET` and `NODE_ENV`, JSON errors for an unknown route (404), invalid JSON (400) and
+  unexpected errors (500), `validate()`, `asyncHandler`, the shared constants and one log line per
+  request (#35).
 - `apps/api`: an Express 5 package with `createApp()`, a `listen` entry on `PORT` (default 3001)
   and `GET /api/health`, tested with supertest. `pnpm api:dev` starts it, and `pnpm test` and
   `pnpm test:coverage` now run the API tests too (#34).

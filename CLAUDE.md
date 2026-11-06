@@ -65,7 +65,9 @@ Read these on demand, not for every task:
   label module). Reusable UI, hooks and utils live in `apps/web/src/shared/`. The User schemas,
   the list query schema and the seed users live in `packages/shared` and are imported from
   `@app/shared`. The API lives in `apps/api` (`src/app.ts` exports `createApp()`, `src/server.ts`
-  calls `listen`), so tests use supertest without opening a port.
+  calls `listen`), so tests use supertest without opening a port. API code is split by layer
+  (`routes`, `controllers`, `services`, `middlewares`, `utils`, `constants`, `config`); see
+  "API structure" in [docs/architecture.md](docs/architecture.md).
 - Styling is Tailwind v4 (`@import 'tailwindcss'` in `index.css`, no config file). `Button`
   joins its variant classes and `className` without resolving conflicts, so a variant's color or
   hover classes can silently beat the caller's.
