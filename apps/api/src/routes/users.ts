@@ -1,4 +1,4 @@
-import { userCreateSchema, usersQuerySchema } from '@app/shared'
+import { userCreateSchema, usersQuerySchema, userUpdateSchema } from '@app/shared'
 import { Router, type ErrorRequestHandler } from 'express'
 import { HTTP_STATUS } from '../constants/http'
 import { USER_NOT_FOUND } from '../constants/messages'
@@ -25,9 +25,13 @@ export function createUsersRouter(db: Database): Router {
 
   router.get('/', validate({ query: usersQuerySchema }), controller.list)
   router.post('/', validate({ body: userCreateSchema }), controller.create)
-  // Every fixed path below /users (GET /export, #45) must be registered above this line: after it,
-  // `export` would be taken for an id. No validate() here: a bad id is a 404, not a 400 (SPEC §4).
+  // A fixed path below /users must be registered above the `/:id` route of the same method, or its
+  // name would be taken for an id: GET /export (#45) above the next line, and any later PATCH or
+  // DELETE fixed path above those routes. POST /bulk (#44) cannot clash: there is no POST /:id.
+  // No validate() on GET: a bad id is a 404, not a 400 (SPEC §4).
   router.get('/:id', controller.get)
+  // The body is validated before the user is looked up, so an invalid body for an unknown id is a 400.
+  router.patch('/:id', validate({ body: userUpdateSchema }), controller.update)
   router.use(brokenEscapeIsUnknownId)
 
   return router

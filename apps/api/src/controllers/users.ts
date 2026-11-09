@@ -1,10 +1,17 @@
-import type { UserCreate, UsersQuery } from '@app/shared'
-import type { RequestHandler } from 'express'
+import type { UserCreate, UsersQuery, UserUpdate } from '@app/shared'
+import type { RequestHandler, Response } from 'express'
 import { HTTP_STATUS } from '../constants/http'
-import { EMAIL_IN_USE, USER_NOT_FOUND } from '../constants/messages'
+import { EMAIL_IN_USE, NOTHING_TO_UPDATE, USER_NOT_FOUND } from '../constants/messages'
 import type { Database } from '../db/types'
-import { createUser, EmailTakenError, getUser, listUsers } from '../services/users'
+import { createUser, EmailTakenError, getUser, listUsers, updateUser } from '../services/users'
 import { asyncHandler } from '../utils/asyncHandler'
+
+/** The 409 of POST and PATCH: the same body, so the form maps it to the email input (SPEC §4). */
+function sendEmailInUse(res: Response): void {
+  res
+    .status(HTTP_STATUS.CONFLICT)
+    .json({ message: EMAIL_IN_USE, fieldErrors: { email: EMAIL_IN_USE } })
+}
 
 /** The handlers of /api/users. They get the database from `createApp({ db })`, so tests can pass their own. */
 export function createUsersController(db: Database) {
@@ -31,11 +38,31 @@ export function createUsersController(db: Database) {
       res.status(HTTP_STATUS.CREATED).json(user)
     } catch (error) {
       if (!(error instanceof EmailTakenError)) throw error
-      res
-        .status(HTTP_STATUS.CONFLICT)
-        .json({ message: EMAIL_IN_USE, fieldErrors: { email: EMAIL_IN_USE } })
+      sendEmailInUse(res)
     }
   })
 
-  return { list, get, create }
+  const update: RequestHandler = asyncHandler(async (req, res) => {
+    // validate() has parsed the body with userUpdateSchema: unknown keys (id, createdAt) are dropped,
+    // so a body that held only those is empty here, like `{}` (A2).
+    const input = req.validated?.body as UserUpdate
+    if (Object.keys(input).length === 0) {
+      res.status(HTTP_STATUS.BAD_REQUEST).json({ message: NOTHING_TO_UPDATE })
+      return
+    }
+
+    try {
+      const user = await updateUser(db, String(req.params.id), input)
+      if (!user) {
+        res.status(HTTP_STATUS.NOT_FOUND).json({ message: USER_NOT_FOUND })
+        return
+      }
+      res.json(user)
+    } catch (error) {
+      if (!(error instanceof EmailTakenError)) throw error
+      sendEmailInUse(res)
+    }
+  })
+
+  return { list, get, create, update }
 }

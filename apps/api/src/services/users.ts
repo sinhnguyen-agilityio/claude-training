@@ -1,4 +1,4 @@
-import type { User, UserCreate, UsersPage, UsersQuery } from '@app/shared'
+import type { User, UserCreate, UsersPage, UsersQuery, UserUpdate } from '@app/shared'
 import { and, asc, count, desc, eq, ilike, or, sql } from 'drizzle-orm'
 import { toUser } from '../db/mappers'
 import { EMAIL_IN_USE } from '../constants/messages'
@@ -47,6 +47,33 @@ export async function createUser(db: Database, input: UserCreate): Promise<User>
     const [row] = await db.insert(users).values(input).returning()
     if (!row) throw new Error('Insert returned no row')
     return toUser(row)
+  } catch (error) {
+    if (isEmailIndexViolation(error)) throw new EmailTakenError()
+    throw error
+  }
+}
+
+/**
+ * Updates the given fields of a user for `PATCH /api/users/:id`, or returns `null` when there is no
+ * such user. `input` is already parsed by `userUpdateSchema` and holds at least one field. An id that
+ * is not a UUID has no user either, and is answered without a query (as in `getUser`). `updatedAt`
+ * moves on every update; the unique index on `lower(email)` decides a clash, as in `createUser`, and
+ * ignores the row being updated, so a user may keep their own email.
+ */
+export async function updateUser(
+  db: Database,
+  id: string,
+  input: UserUpdate,
+): Promise<User | null> {
+  if (!isUuid(id)) return null
+
+  try {
+    const [row] = await db
+      .update(users)
+      .set({ ...input, updatedAt: sql`now()` })
+      .where(eq(users.id, id))
+      .returning()
+    return row ? toUser(row) : null
   } catch (error) {
     if (isEmailIndexViolation(error)) throw new EmailTakenError()
     throw error
