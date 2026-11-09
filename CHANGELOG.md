@@ -8,6 +8,12 @@ All notable changes to this project are listed here, newest first. The format fo
 
 ### Added
 
+- `POST /api/users`: create a user in PostgreSQL, parsed with the shared `userCreateSchema` (names
+  trimmed, email lowercased, a blank phone stored as `null`, `status` `active` by default; `id` and
+  the timestamps in the body are ignored). Answers 201 with the user, 400 `Validation failed` with
+  one entry per bad field, and 409 `Email is already in use` for an email that exists in any letter
+  case. The unique index on `lower(email)` decides, so of two simultaneous requests exactly one
+  succeeds (#40).
 - `GET /api/users/:id`: one user from PostgreSQL, as the shared `User` (ISO dates, `phone` `null` or
   a string). An unknown id answers 404 `{ "message": "User not found" }`, and so does an id that is
   not a UUID (checked before the query, which the `uuid` column would answer with a 500) (#39).

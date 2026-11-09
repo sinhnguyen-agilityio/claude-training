@@ -1,4 +1,4 @@
-import { usersQuerySchema } from '@app/shared'
+import { userCreateSchema, usersQuerySchema } from '@app/shared'
 import { Router, type ErrorRequestHandler } from 'express'
 import { HTTP_STATUS } from '../constants/http'
 import { USER_NOT_FOUND } from '../constants/messages'
@@ -24,6 +24,7 @@ export function createUsersRouter(db: Database): Router {
   const controller = createUsersController(db)
 
   router.get('/', validate({ query: usersQuerySchema }), controller.list)
+  router.post('/', validate({ body: userCreateSchema }), controller.create)
   // Every fixed path below /users (GET /export, #45) must be registered above this line: after it,
   // `export` would be taken for an id. No validate() here: a bad id is a 404, not a 400 (SPEC §4).
   router.get('/:id', controller.get)
