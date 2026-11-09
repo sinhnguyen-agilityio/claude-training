@@ -1,9 +1,9 @@
-import type { UsersQuery } from '@app/shared'
+import type { UserCreate, UsersQuery } from '@app/shared'
 import type { RequestHandler } from 'express'
 import { HTTP_STATUS } from '../constants/http'
-import { USER_NOT_FOUND } from '../constants/messages'
+import { EMAIL_IN_USE, USER_NOT_FOUND } from '../constants/messages'
 import type { Database } from '../db/types'
-import { getUser, listUsers } from '../services/users'
+import { createUser, EmailTakenError, getUser, listUsers } from '../services/users'
 import { asyncHandler } from '../utils/asyncHandler'
 
 /** The handlers of /api/users. They get the database from `createApp({ db })`, so tests can pass their own. */
@@ -23,5 +23,19 @@ export function createUsersController(db: Database) {
     res.json(user)
   })
 
-  return { list, get }
+  const create: RequestHandler = asyncHandler(async (req, res) => {
+    // validate() has parsed the body with userCreateSchema: unknown keys (id, createdAt) are dropped.
+    const input = req.validated?.body as UserCreate
+    try {
+      const user = await createUser(db, input)
+      res.status(HTTP_STATUS.CREATED).json(user)
+    } catch (error) {
+      if (!(error instanceof EmailTakenError)) throw error
+      res
+        .status(HTTP_STATUS.CONFLICT)
+        .json({ message: EMAIL_IN_USE, fieldErrors: { email: EMAIL_IN_USE } })
+    }
+  })
+
+  return { list, get, create }
 }

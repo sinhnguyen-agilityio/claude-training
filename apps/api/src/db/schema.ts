@@ -6,6 +6,9 @@ import { USER_ROLES, USER_STATUSES } from '@app/shared'
 export const userRole = pgEnum('user_role', USER_ROLES)
 export const userStatus = pgEnum('user_status', USER_STATUSES)
 
+/** The unique index on `lower(email)`. The API reads this name from a 23505 error to answer 409. */
+export const USERS_EMAIL_INDEX = 'users_email_lower_idx'
+
 export const users = pgTable(
   'users',
   {
@@ -21,7 +24,7 @@ export const users = pgTable(
   },
   (table) => [
     // Email is unique case-insensitively (SPEC §3: 409 when taken).
-    uniqueIndex('users_email_lower_idx').on(sql`lower(${table.email})`),
+    uniqueIndex(USERS_EMAIL_INDEX).on(sql`lower(${table.email})`),
   ],
 )
 

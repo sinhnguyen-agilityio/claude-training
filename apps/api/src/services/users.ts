@@ -1,10 +1,57 @@
-import type { User, UsersPage, UsersQuery } from '@app/shared'
+import type { User, UserCreate, UsersPage, UsersQuery } from '@app/shared'
 import { and, asc, count, desc, eq, ilike, or, sql } from 'drizzle-orm'
 import { toUser } from '../db/mappers'
-import { users } from '../db/schema'
+import { EMAIL_IN_USE } from '../constants/messages'
+import { users, USERS_EMAIL_INDEX } from '../db/schema'
 import type { Database } from '../db/types'
 import { escapeLike } from '../utils/escapeLike'
 import { isUuid } from '../utils/isUuid'
+
+const UNIQUE_VIOLATION = '23505'
+
+/** Thrown by `createUser` when another user already has the email, in any letter case. */
+export class EmailTakenError extends Error {
+  constructor() {
+    super(EMAIL_IN_USE)
+    this.name = 'EmailTakenError'
+  }
+}
+
+/**
+ * Drizzle wraps the error of the driver (`DrizzleQueryError`) and keeps it in `cause`; look at both,
+ * so the check still works if a driver error arrives unwrapped.
+ */
+function isEmailIndexViolation(error: unknown): boolean {
+  for (const candidate of [error, error instanceof Error ? error.cause : undefined]) {
+    if (
+      typeof candidate === 'object' &&
+      candidate !== null &&
+      'code' in candidate &&
+      candidate.code === UNIQUE_VIOLATION &&
+      'constraint' in candidate &&
+      candidate.constraint === USERS_EMAIL_INDEX
+    ) {
+      return true
+    }
+  }
+  return false
+}
+
+/**
+ * Inserts a user for `POST /api/users`. `input` is already parsed by `userCreateSchema`. There is no
+ * look-up before the insert: the unique index on `lower(email)` decides, so two simultaneous requests
+ * cannot both succeed (SPEC §3). The id and both timestamps come from the database.
+ */
+export async function createUser(db: Database, input: UserCreate): Promise<User> {
+  try {
+    const [row] = await db.insert(users).values(input).returning()
+    if (!row) throw new Error('Insert returned no row')
+    return toUser(row)
+  } catch (error) {
+    if (isEmailIndexViolation(error)) throw new EmailTakenError()
+    throw error
+  }
+}
 
 /**
  * One user for `GET /api/users/:id`, or `null` when there is none. An id that is not a UUID has no
