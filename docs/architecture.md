@@ -67,7 +67,7 @@ touches nothing else:
 - `middlewares/`: `requestLogger`, `validate`, `notFound` and `errorHandler`.
 - `utils/`: `asyncHandler` (forwards an error from an async controller to `errorHandler`) and the
   `Logger` type with `silentLogger` and `stdLogger`.
-- `constants/`: `HTTP_STATUS`, the page sizes (re-exported from `@app/shared`) and the bulk limits.
+- `constants/`: `HTTP_STATUS`, the page sizes (re-exported from `@app/shared`) (the bulk limits and schema live in `packages/shared/src/bulk.ts`).
 - `config/env.ts`: `loadEnv()` parses `PORT`, `DATABASE_URL` (required), `ALLOW_RESET` and `NODE_ENV`
   with Zod. An invalid or missing value exits with code 1 and names the variable, never its value.
 

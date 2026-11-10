@@ -16,7 +16,17 @@ const idsSchema = z
     error: 'ids must be an array',
   })
   .max(MAX_BULK_ENTRIES, `At most ${MAX_BULK_ENTRIES} ids per request`)
-  .transform((ids) => [...new Set(ids)])
+  // Ids that differ only in letter case are one id (stored ids are lowercase UUIDs); the first
+  // spelling is kept, in request order. The 50-id cap is checked on this set.
+  .transform((ids) => {
+    const seen = new Set<string>()
+    return ids.filter((id) => {
+      const key = id.toLowerCase()
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+  })
   .pipe(
     z
       .array(z.string())

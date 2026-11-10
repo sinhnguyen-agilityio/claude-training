@@ -82,15 +82,8 @@ export function createHandlers(
       await latency()
       const input = bulkRequestSchema.safeParse(await readJson(request))
       if (!input.success) return validationError('Validation failed', input.error)
-      // As in the API (A5): ids that differ only in letter case are one id, and the first spelling
-      // is kept. Stored ids are lowercase, so the repository is asked with lowercase ids.
-      const seen = new Set<string>()
-      const ids = input.data.ids.filter((id) => {
-        const key = id.toLowerCase()
-        if (seen.has(key)) return false
-        seen.add(key)
-        return true
-      })
+      // The schema has removed duplicates, letter case ignored (A5). Stored ids are lowercase.
+      const { ids } = input.data
       const keys = ids.map((id) => id.toLowerCase())
       const done = new Set(
         input.data.action === 'delete'

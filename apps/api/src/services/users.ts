@@ -165,21 +165,13 @@ export async function listUsers(db: Database, query: UsersQuery): Promise<UsersP
 
 /**
  * Runs `POST /api/users/bulk` (SPEC §4). `request` is already parsed by `bulkRequestSchema`, so its
- * ids are distinct and between 1 and 50. Ids that differ only in letter case are one id (the first
- * spelling is kept), and an id that is not a UUID has no user, so it is not sent to the database.
- * One statement does the work, so it is all or nothing. `setStatus` moves `updatedAt` on every user
+ * ids are distinct (letter case ignored, first spelling kept) and between 1 and 50. An id that is not
+ * a UUID has no user, so it is not sent to the database. Each action is one statement, so it is all
+ * or nothing for the ids sent to the database. `setStatus` moves `updatedAt` on every user
  * it reaches, even one who already has the status.
  */
 export async function bulkUsers(db: Database, request: BulkRequestParsed): Promise<BulkResult> {
-  const seen = new Set<string>()
-  const requested: string[] = []
-  for (const id of request.ids) {
-    const key = id.toLowerCase()
-    if (seen.has(key)) continue
-    seen.add(key)
-    requested.push(id)
-  }
-
+  const requested = request.ids
   const candidates = requested.filter(isUuid).map((id) => id.toLowerCase())
   let reached = new Set<string>()
   if (candidates.length > 0) {

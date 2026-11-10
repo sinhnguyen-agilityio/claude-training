@@ -146,19 +146,30 @@ describe('POST /api/users/bulk', () => {
     expect(res.status).toBe(400)
   })
 
-  it('counts case variants of an id once toward the 50-id cap (A5)', async () => {
-    const lower = Array.from(
-      { length: 50 },
+  const uuids = (count: number) =>
+    Array.from(
+      { length: count },
       (_, i) => `aaaaaaaa-0000-4000-8000-${String(i).padStart(12, '0')}`,
     )
-    const withUpper = [...lower, ...lower.map((id) => id.toUpperCase())]
 
-    const res = await bulk({ action: 'delete', ids: withUpper })
+  it('counts case variants of an id once toward the 50-id cap (A5)', async () => {
+    const lower = uuids(26)
+    const ids52 = [...lower, ...lower.map((id) => id.toUpperCase())]
 
-    // The schema removes exact duplicates only, so the 100 spellings are over the 50-id cap (400).
-    // The service folds case later, but it never sees more than 50 ids.
-    expect(withUpper).toHaveLength(100)
+    const res = await bulk({ action: 'delete', ids: ids52 })
+
+    expect(ids52).toHaveLength(52)
+    expect(res.status).toBe(200)
+    expect(res.body.failed.map((item: { id: string }) => item.id)).toEqual(lower)
+  })
+
+  it('answers 400 for 51 distinct ids in mixed letter case (A5)', async () => {
+    const mixed = uuids(51).map((id, i) => (i % 2 === 0 ? id.toUpperCase() : id))
+
+    const res = await bulk({ action: 'delete', ids: mixed })
+
     expect(res.status).toBe(400)
+    expect(res.body.fieldErrors).toHaveProperty(['ids'])
   })
 
   it('answers 400 for a request with no body (AC3)', async () => {
