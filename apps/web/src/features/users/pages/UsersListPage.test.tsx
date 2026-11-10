@@ -61,6 +61,8 @@ describe('UsersListPage', () => {
     expect(next).toBeDisabled()
 
     await user.click(previous)
+    // Wait for the render of page 2 first: a second click on the old render would ask for page 2 again.
+    expect(await screen.findByText('Showing 11–20 of 25')).toBeInTheDocument()
     await user.click(previous)
     expect(await screen.findByText('Showing 1–10 of 25')).toBeInTheDocument()
     expect(router.state.location.search).toBe('')

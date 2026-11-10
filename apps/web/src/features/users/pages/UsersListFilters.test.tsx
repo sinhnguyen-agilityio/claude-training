@@ -35,7 +35,9 @@ describe('UsersListPage search, filters and sort', () => {
     const { user, router } = await renderList()
     const searches = recordListRequests()
 
-    await user.type(screen.getByRole('searchbox', { name: 'Search' }), 'NGUYEN')
+    // One paste is one input event, so the pause cannot end between keystrokes on a slow machine.
+    await user.click(screen.getByRole('searchbox', { name: 'Search' }))
+    await user.paste('NGUYEN')
 
     await waitFor(() => expect(screen.getByText('Showing 1–2 of 2')).toBeInTheDocument())
     expect(rowNames()).toEqual(['Lan Nguyen', 'Minh Nguyen'])
@@ -47,6 +49,11 @@ describe('UsersListPage search, filters and sort', () => {
     const { user, router } = await renderList()
 
     await user.selectOptions(screen.getByRole('combobox', { name: 'Role' }), 'admin')
+    // Wait for the render of the first change, or the second one is built on the old params. This
+    // works because the select is controlled by the URL state: it shows Admin only after the commit.
+    await waitFor(() =>
+      expect(screen.getByRole('combobox', { name: 'Role' })).toHaveDisplayValue('Admin'),
+    )
     await user.selectOptions(screen.getByRole('combobox', { name: 'Status' }), 'inactive')
 
     await waitFor(() => expect(rowNames()).toEqual(['Kenji Tanaka']))
@@ -105,6 +112,9 @@ describe('UsersListPage search, filters and sort', () => {
     const { user, router } = await renderList()
     await user.type(screen.getByRole('searchbox', { name: 'Search' }), 'lee')
     await waitFor(() => expect(router.state.location.search).toBe('?q=lee'))
+    // The router state changes at once, but the render that carries the new params commits later.
+    // Wait for the filtered rows, so the role change is built on that render and keeps `q`.
+    await waitFor(() => expect(rowNames()).toEqual(['Hannah Lee']))
     await user.selectOptions(screen.getByRole('combobox', { name: 'Role' }), 'admin')
     await waitFor(() => expect(router.state.location.search).toBe('?q=lee&role=admin'))
 
