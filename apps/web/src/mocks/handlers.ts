@@ -82,17 +82,28 @@ export function createHandlers(
       await latency()
       const input = bulkRequestSchema.safeParse(await readJson(request))
       if (!input.success) return validationError('Validation failed', input.error)
-      const { ids } = input.data
+      // As in the API (A5): ids that differ only in letter case are one id, and the first spelling
+      // is kept. Stored ids are lowercase, so the repository is asked with lowercase ids.
+      const seen = new Set<string>()
+      const ids = input.data.ids.filter((id) => {
+        const key = id.toLowerCase()
+        if (seen.has(key)) return false
+        seen.add(key)
+        return true
+      })
+      const keys = ids.map((id) => id.toLowerCase())
       const done = new Set(
         input.data.action === 'delete'
-          ? repository.removeMany(ids)
-          : repository.updateMany(ids, { status: input.data.status }),
+          ? repository.removeMany(keys)
+          : repository.updateMany(keys, { status: input.data.status }),
       )
       // The repository only skips ids that match no user, so `not_found` is the one failure
       // reason today. Give `removeMany`/`updateMany` a per-id result before adding another.
       const result: BulkResult = {
-        succeeded: ids.filter((id) => done.has(id)),
-        failed: ids.filter((id) => !done.has(id)).map((id) => ({ id, reason: 'not_found' })),
+        succeeded: ids.filter((id) => done.has(id.toLowerCase())),
+        failed: ids
+          .filter((id) => !done.has(id.toLowerCase()))
+          .map((id) => ({ id, reason: 'not_found' })),
       }
       return HttpResponse.json(result)
     }),
