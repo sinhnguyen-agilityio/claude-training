@@ -18,7 +18,10 @@ const env = readEnv()
 const { db } = await import('./db/client')
 
 // Express 5 passes a listen error (for example EADDRINUSE) to this callback.
-createApp({ logger: stdLogger, db }).listen(env.PORT, (error?: Error) => {
-  if (error) throw error
-  process.stdout.write(`API listening on :${env.PORT}\n`)
-})
+createApp({ logger: stdLogger, db, allowReset: env.ALLOW_RESET }).listen(
+  env.PORT,
+  (error?: Error) => {
+    if (error) throw error
+    process.stdout.write(`API listening on :${env.PORT}\n`)
+  },
+)

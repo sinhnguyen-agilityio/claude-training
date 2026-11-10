@@ -71,6 +71,10 @@ touches nothing else:
 - `config/env.ts`: `loadEnv()` parses `PORT`, `DATABASE_URL` (required), `ALLOW_RESET` and `NODE_ENV`
   with Zod. An invalid or missing value exits with code 1 and names the variable, never its value.
 
+`createApp({ db, allowReset })` registers `POST /api/reset` (`routes/reset.ts` → `controllers/reset.ts` →
+`services/reset.ts`, which runs `seedDatabase`) only when both are set; `server.ts` passes
+`env.ALLOW_RESET`. Off, nothing matches and the 404 answers.
+
 Order in `createApp`: `requestLogger`, `express.json()`, the `/api` router, `errorHandler`. Error
 bodies follow SPEC §4, `{ message, fieldErrors? }`: unknown route 404 `Not found`, a body that is not
 JSON 400 `Invalid JSON`, any other client error body-parser raises keeps its 4xx status (413 `Payload too large`, otherwise `Bad request`), anything unexpected 500 `Internal server error` (logged with

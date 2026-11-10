@@ -13,6 +13,11 @@ export interface CreateAppOptions {
    * test of an unrelated route can leave it out and needs no Postgres.
    */
   db?: Database
+  /**
+   * Registers `POST /api/reset` when true and `db` is set (#43). `server.ts` passes `env.ALLOW_RESET`;
+   * off, the route does not exist and the 404 answers.
+   */
+  allowReset?: boolean
   /** Mounted under /api before the 404. For tests that need a route the API does not have. */
   extraRouter?: Router
 }
@@ -23,7 +28,14 @@ export function createApp(options: CreateAppOptions = {}) {
 
   app.use(requestLogger(logger))
   app.use(express.json())
-  app.use('/api', createApiRouter({ db: options.db, extraRouter: options.extraRouter }))
+  app.use(
+    '/api',
+    createApiRouter({
+      db: options.db,
+      allowReset: options.allowReset,
+      extraRouter: options.extraRouter,
+    }),
+  )
   app.use(errorHandler(logger))
 
   return app
