@@ -32,6 +32,8 @@ export function createUsersRouter(db: Database): Router {
   router.get('/:id', controller.get)
   // The body is validated before the user is looked up, so an invalid body for an unknown id is a 400.
   router.patch('/:id', validate({ body: userUpdateSchema }), controller.update)
+  // No validate() on DELETE either: a bad id is a 404 (SPEC §4).
+  router.delete('/:id', controller.remove)
   router.use(brokenEscapeIsUnknownId)
 
   return router

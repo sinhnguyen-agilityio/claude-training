@@ -8,6 +8,9 @@ All notable changes to this project are listed here, newest first. The format fo
 
 ### Added
 
+- `DELETE /api/users/:id`: remove a user from PostgreSQL; answers 204 with an empty body, and 404
+  `User not found` for an unknown, already deleted or non-UUID id (an uppercase UUID matches the
+  user). Only the row of that id is removed (#42).
 - `PATCH /api/users/:id`: change any subset of a user's fields in PostgreSQL, parsed with the shared
   `userUpdateSchema`; answers 200 with the full user and a new `updatedAt` (`createdAt` and `id`
   stay). The body is validated before the user is looked up, so an invalid body is a 400 even for an
