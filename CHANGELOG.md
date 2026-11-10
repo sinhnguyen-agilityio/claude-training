@@ -8,6 +8,10 @@ All notable changes to this project are listed here, newest first. The format fo
 
 ### Added
 
+- `GET /api/users/export`: every user that matches `q`, `role`, `status`, `sort` and `order`, in the
+  list's order, as `{ data, total }` with no paging and no row cap. `page` and `pageSize` are
+  ignored, even invalid ones; an invalid filter is the list's 400. It shares the list's filter and
+  sort code (#45).
 - `POST /api/users/bulk`: delete or set the status of up to 50 users in PostgreSQL in one statement,
   parsed with the shared `bulkRequestSchema`; answers 200 `{ succeeded, failed }`, where an unknown
   or non-UUID id is `{ id, reason: "not_found" }`. Duplicate ids (letter case ignored) are handled
