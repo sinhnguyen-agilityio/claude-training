@@ -6,8 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 User Management Dashboard: a React 19 + TypeScript (strict) CRUD app for users, built as a
 training project. The backend is an Express + PostgreSQL REST API (`apps/api`, being added in
-epic #31). Until #46 merges, the browser still runs an MSW mock that persists to `localStorage`,
-in **every** build, production included. `docs/SPEC.md` is the source of truth
+epic #31). The browser calls that API through a `/api` proxy in every environment; MSW exists
+only for Vitest. `docs/SPEC.md` is the source of truth
 for the data model (§3), the API contract (§4) and the acceptance criteria for features F1–F8
 (§5). Code comments cite it as `SPEC F4`, `SPEC §4` and so on.
 
@@ -26,7 +26,7 @@ pnpm lint                # oxlint --deny-warnings
 pnpm format              # prettier --write .   (format:check to verify)
 pnpm test                # vitest run in every package (web: jsdom; api: supertest)
 pnpm test:coverage       # enforces an 80% threshold on lines/statements/functions/branches, per package
-pnpm e2e                 # Playwright: builds, serves the production build on :4173, runs apps/web/tests/e2e
+pnpm e2e                 # Playwright: builds, serves the production build on :4173 (plus its own API on :3101 and a per-test reset; see docs/testing.md), runs apps/web/tests/e2e
 E2E_PORT=4174 pnpm e2e   # another port, so two worktrees can run E2E at the same time
 
 # Single tests
@@ -55,7 +55,7 @@ branch, plan), `/ship` (checks, diff, review, commit, PR), `/pr-walkthrough`, `/
 
 Read these on demand, not for every task:
 
-- [docs/architecture.md](docs/architecture.md): request flow, shared schemas, the mock API, cache keys,
+- [docs/architecture.md](docs/architecture.md): request flow, shared schemas, the Vitest mock API, cache keys,
   list state in the URL, create and edit forms.
 - [docs/testing.md](docs/testing.md): `renderRoute()`, the MSW node server, timeouts, jsdom limits, E2E.
 
@@ -83,13 +83,11 @@ Read these on demand, not for every task:
 - Never skip the pre-commit hook (`--no-verify`), and never lower the 80% coverage threshold to
   get a run passing.
 - Never change validation rules on only one side. Edit `packages/shared/src/schema.ts` / `query.ts`, which both the
-  form and the API import (until #46, the API is the mock handlers).
+  form and the API import (the API parses with the same schemas).
 - Never change the existing seed users in `packages/shared/src/seed.ts` casually. Unit and E2E tests rely on
   their exact values.
-- Never import MSW in app code outside tests and `apps/web/src/mocks/`. Until #46 removes the mock, the
-  browser worker in `apps/web/src/mocks/browser.ts` is the only API, so never stop it from starting in
-  production builds (e.g. by gating it on `import.meta.env.DEV`). MSW's own `'bypass'`
-  options, such as `onUnhandledFrame: 'bypass'` in `apps/web/src/mocks/browser.ts`, are intended.
+- Never import MSW in app code outside tests, `apps/web/src/test/` and `apps/web/src/mocks/`
+  (`node.ts`, `handlers.ts`). No browser worker exists: never add one back or ship MSW in a build.
 - Never mock TanStack Query hooks or `fetch` in tests. Network goes through the MSW node server,
   overridden with `server.use(...)`. Tests of pages and routes render the real route tree with
   `renderRoute()`. Shared UI components and hooks, which have no route, may be rendered directly.
