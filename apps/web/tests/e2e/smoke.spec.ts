@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from './fixtures.js'
 
 test('app loads and redirects to the users page', async ({ page }) => {
   await page.goto('/')
@@ -8,15 +8,20 @@ test('app loads and redirects to the users page', async ({ page }) => {
   await expect(page).toHaveTitle('User Management Dashboard')
 })
 
-test('the mock API is served by the production build', async ({ page }) => {
+// AC3: the list comes from Express and Postgres, not from a service worker.
+test('the real API answers /api/users and no service worker is registered', async ({
+  page,
+  context,
+}) => {
+  const listResponse = page.waitForResponse(
+    (response) => new URL(response.url()).pathname === '/api/users',
+  )
   await page.goto('/')
+  const response = await listResponse
+
+  expect(response.status()).toBe(200)
+  expect(response.fromServiceWorker()).toBe(false)
+  expect(context.serviceWorkers()).toHaveLength(0)
+  expect(await response.json()).toMatchObject({ total: 25, page: 1, pageSize: 10 })
   await expect(page.getByRole('heading', { name: 'Users' })).toBeVisible()
-
-  const body = await page.evaluate(async () => {
-    const response = await fetch('/api/users')
-    return { status: response.status, json: await response.json() }
-  })
-
-  expect(body.status).toBe(200)
-  expect(body.json).toMatchObject({ total: 25, page: 1, pageSize: 10 })
 })

@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from './fixtures.js'
 
 const GRACE_ID = '00000000-0000-4000-8000-000000000024'
 

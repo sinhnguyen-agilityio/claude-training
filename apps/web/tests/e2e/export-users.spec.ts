@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises'
 import { AxeBuilder } from '@axe-core/playwright'
-import { expect, test } from '@playwright/test'
+import { expect, test } from './fixtures.js'
 
 test('F8: export the filtered users and read the downloaded file', async ({ page }) => {
   await page.goto('/users?role=editor&sort=name&order=asc')

@@ -2,22 +2,21 @@
 
 How the app is wired. Read this before changing the API layer, the cache, list state or the forms.
 
-> The request flow below is the current state: the browser runs the MSW mock. Epic #31 replaces
-> it with an Express + PostgreSQL API, and #46 rewrites this page.
+Request flow: page → `features/users/api/hooks.ts` (TanStack Query) → `api/client.ts` (`fetch('/api/…')`)
+→ the Vite dev or preview proxy (`/api` → `http://localhost:3001`, or `API_PROXY_TARGET`) → Express
+(`apps/api`: route → controller → service) → Drizzle → PostgreSQL. The browser only calls its own
+origin, so there is no CORS. A static `dist/` served without Vite has no proxy; the deployment
+ticket decides how `/api` reaches the API there.
 
-Request flow: page → `features/users/api/hooks.ts` (TanStack Query) → `api/client.ts` (`fetch`)
-→ MSW handler (`mocks/handlers.ts`) → repository (`mocks/repository.ts`) → `localStorage`.
-
-- **Shared schemas are the contract.** `packages/shared/src/schema.ts` (the User Zod schemas) and
-  `packages/shared/src/query.ts` (list query params), exported as `@app/shared`, are imported by both the UI and the mock API. The
-  form validates with `userCreateSchema` through `zodResolver`, and the MSW handler parses the
-  request body with the same schema. The list page parses URL params with `usersQuerySchema`'s
-  field schemas, and the handler parses the query string with the whole schema.
-- **The mock API is wired twice from the same factory.** `createHandlers(repository, { delayMs })`
-  is used by `mocks/browser.ts` (service worker, 300 ms latency, started in `main.tsx` before
-  React renders) and by `mocks/node.ts` (Vitest, no latency). The repository takes injectable
-  `storage`, `now` and `generateId` for tests, and reseeds itself when storage is empty or fails
-  schema validation. The seed data (`packages/shared/src/seed.ts`) is a fixed set of 25 users.
+- **Shared schemas are the contract.** `packages/shared/src/schema.ts` (the User Zod schemas),
+  `query.ts` (list query params) and `bulk.ts`, exported as `@app/shared`, are imported by both the
+  UI and the API. The form validates with `userCreateSchema` through `zodResolver`, and the API
+  parses the request body with the same schema. The list page parses URL params with
+  `usersQuerySchema`'s field schemas, and the API parses the query string with the whole schema.
+- **MSW is a Vitest tool only.** `createHandlers(repository, { delayMs })` in `mocks/handlers.ts`
+  is served by `mocks/node.ts` (the MSW node server, no latency) for the component and page tests.
+  No browser worker exists and no build contains MSW. The repository (`mocks/repository.ts`) keeps
+  the seed data (`packages/shared/src/seed.ts`, a fixed set of 25 users) in memory for those tests.
 - **Errors:** every non-2xx response becomes an `ApiError` with `status` and `fieldErrors`
   (status 0 means a network failure). `UserForm` maps `fieldErrors` onto form fields with
   `setError` (e.g. a 409 on email) and shows anything else as a root error. Pages pass an

@@ -2,8 +2,7 @@
 
 How tests are written and run. Read this before adding or changing a test.
 
-> Until #46 merges, E2E runs against the browser's MSW mock. After it, MSW stays only as the
-> Vitest network layer and E2E runs against the Express API and PostgreSQL.
+> MSW is the Vitest network layer only. E2E runs against the real Express API and PostgreSQL.
 
 - API tests (`apps/api`) use Vitest and supertest against `createApp()`: no port is opened. Tests
   that touch the database need Postgres, so run `pnpm db:up` first (CI has a `postgres:16` service).
@@ -32,11 +31,24 @@ How tests are written and run. Read this before adding or changing a test.
 - E2E runs against the production build (`pnpm build && pnpm preview --port 4173`) and reuses a
   server that is already running on that port. Set `E2E_PORT` (e.g. `E2E_PORT=4174 pnpm e2e`) when
   another worktree may be running E2E; otherwise the run may test that worktree's build.
+- **E2E gets its database from `DATABASE_URL`.** Playwright starts the API itself (`apps/api`, with
+  `ALLOW_RESET=true`) on `E2E_API_PORT` (default 3101, so it never meets a `pnpm api:dev` on 3001),
+  and the preview server proxies `/api` to it. Postgres must be running (`pnpm db:up`) with the
+  migrations applied and the seed loaded (`pnpm db:migrate && pnpm db:seed`). The API uses
+  `E2E_DATABASE_URL`, else `DATABASE_URL`, else the `.env.example` default. **Every test starts with
+  `POST /api/reset`** (the auto fixture in `tests/e2e/fixtures.ts`; every spec imports `test` and
+  `expect` from it), which deletes all users in that database and re-inserts the 25 seed users.
+  Pointed at your dev database, E2E wipes your dev data: give E2E its own database, e.g.
+  `E2E_DATABASE_URL=postgres://app:app@localhost:5432/users_e2e`. Workers are limited to 1 and
+  `fullyParallel` is off, because all tests share that one database. The fixture fails with a clear
+  message when the API is down or `ALLOW_RESET` is off. `build-output.spec.ts` checks that `dist/`
+  has no `mockServiceWorker.js` and no `msw` code. The two specs that fail a request keep their
+  in-page `fetch` override.
   `tests/e2e/accessibility.spec.ts` covers axe checks and the 375 px layout. SPEC §6 requires an
   E2E journey for each feature.
 - `pnpm e2e` builds for base `/`. GitHub Pages serves the app under `/claude-training/`, which
   `tests/e2e/subpath.spec.ts` covers: the redirect, a reload on a user's page, create and reload,
-  and the service worker scope. The reload is answered by `vite preview`'s own SPA fallback, so
+  and that `/api` is still called at the root with no service worker. The reload is answered by `vite preview`'s own SPA fallback, so
   the `404.html` copy that Pages relies on (`deploy.yml`) is not tested here. The spec is skipped
   unless `BASE_PATH` is set. CI runs it as a separate step after `pnpm e2e`. Locally:
 

@@ -11,8 +11,9 @@ beforeAll(() => {
   server.listen({ onUnhandledFrame: 'error' })
 })
 
-// Every test starts from the seed data and a fresh tab.
+// Every test starts from a fresh tab. Files with `@vitest-environment node` have no storage.
 beforeEach(() => {
+  if (typeof localStorage === 'undefined') return
   localStorage.clear()
   sessionStorage.clear()
 })

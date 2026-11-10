@@ -6,6 +6,15 @@ All notable changes to this project are listed here, newest first. The format fo
 
 ## [Unreleased]
 
+### Changed
+
+- The app calls the real API in every environment: Vite's dev and preview servers proxy `/api` to
+  `http://localhost:3001` (`API_PROXY_TARGET` overrides it). The browser mock is gone
+  (`mocks/browser.ts`, `public/mockServiceWorker.js` and the worker start in `main.tsx`); MSW stays
+  for Vitest. `pnpm e2e` starts the API with `ALLOW_RESET=true` on `E2E_API_PORT` and resets the
+  database before each test, with one worker. The GitHub Pages demo stays broken until the deploy
+  ticket, and CI E2E needs Postgres (#47) (#46).
+
 ### Added
 
 - `docs/agent-teams.md`: a reference for running Claude Code agent teams on this repo (when to use a

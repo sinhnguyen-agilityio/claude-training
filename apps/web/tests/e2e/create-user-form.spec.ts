@@ -1,4 +1,5 @@
-import { expect, test, type Page } from '@playwright/test'
+import type { Page } from '@playwright/test'
+import { expect, test } from './fixtures.js'
 
 // More SPEC F2 cases for /users/new. The happy path and the duplicate email are in create-user.spec.ts.
 
@@ -141,7 +142,7 @@ test('F2: after a duplicate email error, a different email can be submitted', as
 })
 
 test('F2: a server error shows a form-level message and keeps the input', async ({ page }) => {
-  // page.route() cannot see requests answered by the MSW service worker, so fail the request in the page.
+  // Fail the request in the page (a fetch override), as before the real API.
   await page.addInitScript(() => {
     const originalFetch = window.fetch
     window.fetch = (input, init) => {

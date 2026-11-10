@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from './fixtures.js'
 
 // GitHub Pages serves the app under /claude-training/. These tests run only against a build with
 // BASE_PATH set (the CI step after `pnpm e2e`). playwright.config.ts appends BASE_PATH to baseURL, so
@@ -50,21 +50,20 @@ test('a created user persists across a reload', async ({ page }) => {
   await expect(page.getByRole('navigation', { name: 'Pagination' })).toContainText('of 26')
 })
 
-test('the mock service worker is scoped to the base path', async ({ page }) => {
+test('under the base path the app still calls /api at the root and registers no worker', async ({
+  page,
+}) => {
+  const listResponse = page.waitForResponse(
+    (response) => new URL(response.url()).pathname === '/api/users',
+  )
   await page.goto('./')
-  // main.tsx renders only after the worker has started, so the heading means it is registered.
+  const response = await listResponse
+
+  expect(response.status()).toBe(200)
+  expect(response.fromServiceWorker()).toBe(false)
   await expect(page.getByRole('heading', { name: 'Users' })).toBeVisible()
-
-  const registrations = await page.evaluate(async () => {
-    const all = await navigator.serviceWorker.getRegistrations()
-    return all.map((r) => ({ scope: r.scope, scriptURL: r.active?.scriptURL }))
-  })
-  const origin = new URL(page.url()).origin
-
-  expect(registrations).toEqual([
-    {
-      scope: `${origin}/claude-training/`,
-      scriptURL: `${origin}/claude-training/mockServiceWorker.js`,
-    },
-  ])
+  const registrations = await page.evaluate(
+    async () => (await navigator.serviceWorker.getRegistrations()).length,
+  )
+  expect(registrations).toBe(0)
 })
