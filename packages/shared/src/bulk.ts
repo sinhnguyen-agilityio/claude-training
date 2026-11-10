@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { USER_STATUSES } from '@app/shared'
+import { USER_STATUSES } from './schema'
 
 /** Most ids one bulk request may carry, counted after duplicates are removed (SPEC F7). */
 export const MAX_BULK_IDS = 50

@@ -1,7 +1,7 @@
 import { delay, http, HttpResponse } from 'msw'
 import type { z } from 'zod'
 import type { ApiErrorBody } from '@/features/users/api/client'
-import { bulkRequestSchema, type BulkResult } from '@/features/users/bulkSchema'
+import { bulkRequestSchema, type BulkResult } from '@app/shared'
 import {
   userCreateSchema,
   usersExportQuerySchema,
