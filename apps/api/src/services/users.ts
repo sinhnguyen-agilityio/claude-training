@@ -3,6 +3,8 @@ import type {
   BulkResult,
   User,
   UserCreate,
+  UsersExport,
+  UsersExportQuery,
   UsersPage,
   UsersQuery,
   UserUpdate,
@@ -112,15 +114,10 @@ export async function getUser(db: Database, id: string): Promise<User | null> {
   return row ? toUser(row) : null
 }
 
-/**
- * One page of users for `GET /api/users` (SPEC §4). `q` matches the first name, the last name or the
- * email, each on its own and without regard to case; `role` and `status` narrow the result (AND).
- */
-export async function listUsers(db: Database, query: UsersQuery): Promise<UsersPage> {
-  const { q, role, status, sort, order, page, pageSize } = query
-
+/** The filters of the list and the export: `role` and `status` narrow the result (AND). */
+function buildUsersWhere({ q, role, status }: Pick<UsersQuery, 'q' | 'role' | 'status'>) {
   const pattern = q ? `%${escapeLike(q)}%` : undefined
-  const where = and(
+  return and(
     role ? eq(users.role, role) : undefined,
     status ? eq(users.status, status) : undefined,
     pattern
@@ -131,6 +128,31 @@ export async function listUsers(db: Database, query: UsersQuery): Promise<UsersP
         )
       : undefined,
   )
+}
+
+/**
+ * Names are compared with lower(), so letter case does not change the order (A1). Punctuation and
+ * accents (O'Brien, Éva) still follow the collation of the database. The id makes the order total,
+ * so paging never repeats or skips a user (A2).
+ */
+function buildUsersOrderBy({ sort, order }: Pick<UsersQuery, 'sort' | 'order'>) {
+  const direction = order === 'asc' ? asc : desc
+  return sort === 'name'
+    ? [
+        direction(sql`lower(${users.lastName})`),
+        direction(sql`lower(${users.firstName})`),
+        direction(users.id),
+      ]
+    : [direction(users.createdAt), direction(users.id)]
+}
+
+/**
+ * One page of users for `GET /api/users` (SPEC §4). `q` matches the first name, the last name or the
+ * email, each on its own and without regard to case; `role` and `status` narrow the result (AND).
+ */
+export async function listUsers(db: Database, query: UsersQuery): Promise<UsersPage> {
+  const { page, pageSize } = query
+  const where = buildUsersWhere(query)
 
   const [counted] = await db.select({ value: count() }).from(users).where(where)
   const total = counted?.value ?? 0
@@ -139,24 +161,11 @@ export async function listUsers(db: Database, query: UsersQuery): Promise<UsersP
   const offset = (page - 1) * pageSize
   if (offset >= total) return { data: [], total, page, pageSize }
 
-  // Names are compared with lower(), so letter case does not change the order (A1). Punctuation and
-  // accents (O'Brien, Éva) still follow the collation of the database. The id makes the order total,
-  // so paging never repeats or skips a user (A2).
-  const direction = order === 'asc' ? asc : desc
-  const orderBy =
-    sort === 'name'
-      ? [
-          direction(sql`lower(${users.lastName})`),
-          direction(sql`lower(${users.firstName})`),
-          direction(users.id),
-        ]
-      : [direction(users.createdAt), direction(users.id)]
-
   const rows = await db
     .select()
     .from(users)
     .where(where)
-    .orderBy(...orderBy)
+    .orderBy(...buildUsersOrderBy(query))
     .limit(pageSize)
     .offset(offset)
 
@@ -193,4 +202,18 @@ export async function bulkUsers(db: Database, request: BulkRequestParsed): Promi
     else failed.push({ id, reason: 'not_found' })
   }
   return { succeeded, failed }
+}
+
+/**
+ * Every user that matches the filters of `GET /api/users/export` (SPEC §4), in the order of the
+ * list, with no paging and no row cap. `total` is the number of users returned.
+ */
+export async function exportUsers(db: Database, query: UsersExportQuery): Promise<UsersExport> {
+  const rows = await db
+    .select()
+    .from(users)
+    .where(buildUsersWhere(query))
+    .orderBy(...buildUsersOrderBy(query))
+
+  return { data: rows.map(toUser), total: rows.length }
 }

@@ -1,6 +1,7 @@
 import {
   bulkRequestSchema,
   userCreateSchema,
+  usersExportQuerySchema,
   usersQuerySchema,
   userUpdateSchema,
 } from '@app/shared'
@@ -34,6 +35,7 @@ export function createUsersRouter(db: Database): Router {
   // A fixed path below /users must be registered above the `/:id` route of the same method, or its
   // name would be taken for an id: GET /export (#45) above the next line, and any later PATCH or
   // DELETE fixed path above those routes. POST /bulk (#44) cannot clash: there is no POST /:id.
+  router.get('/export', validate({ query: usersExportQuerySchema }), controller.exportList)
   // No validate() on GET: a bad id is a 404, not a 400 (SPEC §4).
   router.get('/:id', controller.get)
   // The body is validated before the user is looked up, so an invalid body for an unknown id is a 400.
