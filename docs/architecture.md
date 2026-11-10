@@ -72,8 +72,8 @@ touches nothing else:
   with Zod. An invalid or missing value exits with code 1 and names the variable, never its value.
 
 `createApp({ db, allowReset })` registers `POST /api/reset` (`routes/reset.ts` → `controllers/reset.ts` →
-`services/reset.ts`, which runs `seedDatabase`) only when both are set; `server.ts` passes
-`env.ALLOW_RESET`. Off, nothing matches and the 404 answers.
+`services/reset.ts`, which runs `seedDatabase`) only when both `db` and `allowReset` are
+set (`server.ts` passes `env.ALLOW_RESET`). Off, nothing matches and the 404 answers.
 
 Order in `createApp`: `requestLogger`, `express.json()`, the `/api` router, `errorHandler`. Error
 bodies follow SPEC §4, `{ message, fieldErrors? }`: unknown route 404 `Not found`, a body that is not
