@@ -49,7 +49,8 @@ describe('UsersListPage search, filters and sort', () => {
     const { user, router } = await renderList()
 
     await user.selectOptions(screen.getByRole('combobox', { name: 'Role' }), 'admin')
-    // Wait for the render of the first change, or the second one is built on the old params.
+    // Wait for the render of the first change, or the second one is built on the old params. This
+    // works because the select is controlled by the URL state: it shows Admin only after the commit.
     await waitFor(() =>
       expect(screen.getByRole('combobox', { name: 'Role' })).toHaveDisplayValue('Admin'),
     )
