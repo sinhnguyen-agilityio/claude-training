@@ -1,5 +1,5 @@
 import type {
-  BulkRequest,
+  BulkRequestParsed,
   BulkResult,
   User,
   UserCreate,
@@ -170,7 +170,7 @@ export async function listUsers(db: Database, query: UsersQuery): Promise<UsersP
  * One statement does the work, so it is all or nothing. `setStatus` moves `updatedAt` on every user
  * it reaches, even one who already has the status.
  */
-export async function bulkUsers(db: Database, request: BulkRequest): Promise<BulkResult> {
+export async function bulkUsers(db: Database, request: BulkRequestParsed): Promise<BulkResult> {
   const seen = new Set<string>()
   const requested: string[] = []
   for (const id of request.ids) {

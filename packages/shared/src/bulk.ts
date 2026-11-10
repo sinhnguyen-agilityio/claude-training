@@ -41,6 +41,9 @@ export const bulkRequestSchema = z.discriminatedUnion(
 /** The wire shape (before duplicates are removed), which is what a client sends. */
 export type BulkRequest = z.input<typeof bulkRequestSchema>
 
+/** The body after parsing: the ids are distinct (what the API service receives). */
+export type BulkRequestParsed = z.output<typeof bulkRequestSchema>
+
 export interface BulkFailure {
   id: string
   reason: string

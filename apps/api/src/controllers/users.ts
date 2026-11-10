@@ -1,4 +1,4 @@
-import type { BulkRequest, UserCreate, UsersQuery, UserUpdate } from '@app/shared'
+import type { BulkRequestParsed, UserCreate, UsersQuery, UserUpdate } from '@app/shared'
 import type { RequestHandler, Response } from 'express'
 import { HTTP_STATUS } from '../constants/http'
 import { EMAIL_IN_USE, NOTHING_TO_UPDATE, USER_NOT_FOUND } from '../constants/messages'
@@ -83,7 +83,7 @@ export function createUsersController(db: Database) {
 
   const bulk: RequestHandler = asyncHandler(async (req, res) => {
     // validate() has parsed the body with bulkRequestSchema: the ids are distinct, 1 to 50.
-    const input = req.validated?.body as BulkRequest
+    const input = req.validated?.body as BulkRequestParsed
     res.json(await bulkUsers(db, input))
   })
 

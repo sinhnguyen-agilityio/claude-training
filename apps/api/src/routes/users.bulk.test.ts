@@ -130,6 +130,37 @@ describe('POST /api/users/bulk', () => {
     expect(await allRows()).toEqual(before)
   })
 
+  it('answers 400 for ids that is null (AC3)', async () => {
+    const res = await bulk({ action: 'delete', ids: null })
+
+    expect(res.status).toBe(400)
+    expect(res.body.fieldErrors).toHaveProperty(['ids'])
+  })
+
+  it('answers 400 for a body that is not valid JSON (AC3)', async () => {
+    const res = await request(app)
+      .post('/api/users/bulk')
+      .set('content-type', 'application/json')
+      .send('{"ids":')
+
+    expect(res.status).toBe(400)
+  })
+
+  it('counts case variants of an id once toward the 50-id cap (A5)', async () => {
+    const lower = Array.from(
+      { length: 50 },
+      (_, i) => `aaaaaaaa-0000-4000-8000-${String(i).padStart(12, '0')}`,
+    )
+    const withUpper = [...lower, ...lower.map((id) => id.toUpperCase())]
+
+    const res = await bulk({ action: 'delete', ids: withUpper })
+
+    // The schema removes exact duplicates only, so the 100 spellings are over the 50-id cap (400).
+    // The service folds case later, but it never sees more than 50 ids.
+    expect(withUpper).toHaveLength(100)
+    expect(res.status).toBe(400)
+  })
+
   it('answers 400 for a request with no body (AC3)', async () => {
     const res = await request(app).post('/api/users/bulk')
 
