@@ -3,7 +3,14 @@ import type { RequestHandler, Response } from 'express'
 import { HTTP_STATUS } from '../constants/http'
 import { EMAIL_IN_USE, NOTHING_TO_UPDATE, USER_NOT_FOUND } from '../constants/messages'
 import type { Database } from '../db/types'
-import { createUser, EmailTakenError, getUser, listUsers, updateUser } from '../services/users'
+import {
+  createUser,
+  deleteUser,
+  EmailTakenError,
+  getUser,
+  listUsers,
+  updateUser,
+} from '../services/users'
 import { asyncHandler } from '../utils/asyncHandler'
 
 /** The 409 of POST and PATCH: the same body, so the form maps it to the email input (SPEC §4). */
@@ -64,5 +71,14 @@ export function createUsersController(db: Database) {
     }
   })
 
-  return { list, get, create, update }
+  const remove: RequestHandler = asyncHandler(async (req, res) => {
+    const deleted = await deleteUser(db, String(req.params.id))
+    if (!deleted) {
+      res.status(HTTP_STATUS.NOT_FOUND).json({ message: USER_NOT_FOUND })
+      return
+    }
+    res.status(HTTP_STATUS.NO_CONTENT).end()
+  })
+
+  return { list, get, create, update, remove }
 }

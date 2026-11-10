@@ -81,6 +81,18 @@ export async function updateUser(
 }
 
 /**
+ * Deletes a user for `DELETE /api/users/:id`; `true` when a row was removed, `false` when there is
+ * no such user. An id that is not a UUID has no user either, and is answered without a query (as in
+ * `getUser`).
+ */
+export async function deleteUser(db: Database, id: string): Promise<boolean> {
+  if (!isUuid(id)) return false
+
+  const rows = await db.delete(users).where(eq(users.id, id)).returning({ id: users.id })
+  return rows.length > 0
+}
+
+/**
  * One user for `GET /api/users/:id`, or `null` when there is none. An id that is not a UUID has no
  * user either: it is answered without a query, because the `uuid` column would raise an error for it
  * (a 500) and the API treats it like any other unknown id (a 404).
