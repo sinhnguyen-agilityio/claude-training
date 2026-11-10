@@ -1,4 +1,5 @@
 import type { User, UsersExport, UsersPage } from '@app/shared'
+import { inArray } from 'drizzle-orm'
 import request from 'supertest'
 import { describe, expect, it } from 'vitest'
 import { createApp } from '../app'
@@ -28,6 +29,10 @@ async function listAll(query: string): Promise<User[]> {
   const all: User[] = []
   for (let page = 1; ; page++) {
     const { body } = await listUsers(`?${query}&page=${page}&pageSize=7`)
+    // An empty page before the total is reached would loop forever: fail with a clear message.
+    if (!Array.isArray(body.data) || (body.data.length === 0 && all.length < body.total)) {
+      throw new Error(`The list gave no users on page ${page} (${all.length} of ${body.total})`)
+    }
     all.push(...body.data)
     if (all.length >= body.total) return all
   }
@@ -117,12 +122,21 @@ describe('GET /api/users/export (no row cap)', () => {
       role: 'viewer' as const,
     }))
     await testDb.db.insert(users).values(extra)
+    try {
+      const { status, body } = await exportUsers('?page=1&pageSize=5')
 
-    const { status, body } = await exportUsers('?page=1&pageSize=5')
-
-    expect(status).toBe(200)
-    expect(body.total).toBe(120)
-    expect(body.data).toHaveLength(120)
-    expect(new Set(body.data.map((user) => user.id)).size).toBe(120)
+      expect(status).toBe(200)
+      expect(body.total).toBe(120)
+      expect(body.data).toHaveLength(120)
+      expect(new Set(body.data.map((user) => user.id)).size).toBe(120)
+    } finally {
+      // Leave the shared table as it was, so the order of the tests does not matter.
+      await testDb.db.delete(users).where(
+        inArray(
+          users.email,
+          extra.map((user) => user.email),
+        ),
+      )
+    }
   })
 })
