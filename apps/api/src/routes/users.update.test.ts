@@ -33,6 +33,10 @@ async function stored(id: string) {
   return row
 }
 
+async function allRows() {
+  return testDb.db.select().from(users).orderBy(users.id)
+}
+
 function patch(id: string, body?: unknown) {
   const req = request(app).patch(`/api/users/${id}`)
   return body === undefined ? req : req.send(body as object)
@@ -51,6 +55,28 @@ describe('PATCH /api/users/:id', () => {
     const row = await stored(erin.id)
     expect(row.firstName).toBe('Zed')
     expect(row.lastName).toBe(erin.lastName)
+  })
+
+  it('changes only the row of the given id (AC1)', async () => {
+    const rowsBefore = await allRows()
+
+    const res = await patch(dave.id, { lastName: 'Only' })
+
+    expect(res.status).toBe(200)
+    const rowsAfter = await allRows()
+    expect(rowsAfter).toHaveLength(rowsBefore.length)
+    expect(rowsAfter.filter((row) => row.id !== dave.id)).toEqual(
+      rowsBefore.filter((row) => row.id !== dave.id),
+    )
+    expect(rowsAfter.find((row) => row.id === dave.id)?.lastName).toBe('Only')
+  })
+
+  it('accepts the exact email of the user itself (AC2)', async () => {
+    const res = await patch(cara.id, { email: cara.email, role: 'admin' })
+
+    expect(res.status).toBe(200)
+    expect(res.body).toMatchObject({ email: cara.email, role: 'admin' })
+    expect((await stored(cara.id)).email).toBe(cara.email)
   })
 
   it('accepts the own email in another letter case and stores it lowercase (AC2)', async () => {
@@ -165,12 +191,20 @@ describe('PATCH /api/users/:id', () => {
     expect(empty.body).toEqual({ message: 'Nothing to update' })
   })
 
-  it.each([[''], [null]])('clears the phone for %j', async (phone) => {
-    const res = await patch(anna.id, { phone })
+  // One user per case, each given a phone first, so a case cannot pass on the work of the other.
+  it.each([
+    ['', '00000000-0000-4000-8000-000000000008'],
+    [null, '00000000-0000-4000-8000-000000000009'],
+  ])('clears the phone for %j', async (phone, id) => {
+    if (!anna.phone) throw new Error('The seed user anna should have a phone')
+    await patch(id, { phone: anna.phone })
+    expect((await stored(id)).phone).not.toBeNull()
+
+    const res = await patch(id, { phone })
 
     expect(res.status).toBe(200)
     expect(res.body.phone).toBeNull()
-    expect((await stored(anna.id)).phone).toBeNull()
+    expect((await stored(id)).phone).toBeNull()
   })
 
   it('lets exactly one of two simultaneous updates to the same new email win', async () => {
