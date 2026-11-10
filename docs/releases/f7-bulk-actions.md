@@ -33,5 +33,5 @@ You can now select several users on the list and delete them, or change their st
   - You cannot select users across pages, undo an action, or edit other fields (such as role) in bulk.
   - While an action runs, the action buttons and checkboxes are disabled. Paging and filters still work, and the result toast still appears if you move on.
 - **For the team:**
-  - The request is checked by a schema shared by the UI and the mock API (`bulkSchema.ts`). It removes duplicate ids, reports an unknown id as `not_found`, and returns 400 for an empty list, more than 50 ids or a bad status. A partial failure is still a 200.
+  - The request is checked by a schema shared by the UI and the mock API (`packages/shared/src/bulk.ts`). It removes duplicate ids, reports an unknown id as `not_found`, and returns 400 for an empty list, more than 50 ids or a bad status. A partial failure is still a 200.
   - One test, `UsersListFilters` ("follows the URL when it changes from outside"), is sensitive to machine load. It can fail in a full parallel run and passes when run alone.

@@ -1,5 +1,13 @@
-import type { User, UserCreate, UsersPage, UsersQuery, UserUpdate } from '@app/shared'
-import { and, asc, count, desc, eq, ilike, or, sql } from 'drizzle-orm'
+import type {
+  BulkRequestParsed,
+  BulkResult,
+  User,
+  UserCreate,
+  UsersPage,
+  UsersQuery,
+  UserUpdate,
+} from '@app/shared'
+import { and, asc, count, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm'
 import { toUser } from '../db/mappers'
 import { EMAIL_IN_USE } from '../constants/messages'
 import { users, USERS_EMAIL_INDEX } from '../db/schema'
@@ -153,4 +161,36 @@ export async function listUsers(db: Database, query: UsersQuery): Promise<UsersP
     .offset(offset)
 
   return { data: rows.map(toUser), total, page, pageSize }
+}
+
+/**
+ * Runs `POST /api/users/bulk` (SPEC §4). `request` is already parsed by `bulkRequestSchema`, so its
+ * ids are distinct (letter case ignored, first spelling kept) and between 1 and 50. An id that is not
+ * a UUID has no user, so it is not sent to the database. Each action is one statement, so it is all
+ * or nothing for the ids sent to the database. `setStatus` moves `updatedAt` on every user
+ * it reaches, even one who already has the status.
+ */
+export async function bulkUsers(db: Database, request: BulkRequestParsed): Promise<BulkResult> {
+  const requested = request.ids
+  const candidates = requested.filter(isUuid).map((id) => id.toLowerCase())
+  let reached = new Set<string>()
+  if (candidates.length > 0) {
+    const rows =
+      request.action === 'delete'
+        ? await db.delete(users).where(inArray(users.id, candidates)).returning({ id: users.id })
+        : await db
+            .update(users)
+            .set({ status: request.status, updatedAt: sql`now()` })
+            .where(inArray(users.id, candidates))
+            .returning({ id: users.id })
+    reached = new Set(rows.map((row) => row.id))
+  }
+
+  const succeeded: string[] = []
+  const failed: BulkResult['failed'] = []
+  for (const id of requested) {
+    if (reached.has(id.toLowerCase())) succeeded.push(id)
+    else failed.push({ id, reason: 'not_found' })
+  }
+  return { succeeded, failed }
 }
