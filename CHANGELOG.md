@@ -8,6 +8,10 @@ All notable changes to this project are listed here, newest first. The format fo
 
 ### Added
 
+- `POST /api/reset`: put the 25 seed users back in PostgreSQL (the same code as `pnpm db:seed`, in
+  one transaction, so a failed insert leaves the rows untouched); answers 204 with an empty body
+  and ignores any request body. The route exists only when `ALLOW_RESET=true`; otherwise it answers
+  the usual 404 `Not found`. `ALLOW_RESET` is documented in `.env.example` (#43).
 - `DELETE /api/users/:id`: remove a user from PostgreSQL; answers 204 with an empty body, and 404
   `User not found` for an unknown, already deleted or non-UUID id (an uppercase UUID matches the
   user). Only the row of that id is removed (#42).
