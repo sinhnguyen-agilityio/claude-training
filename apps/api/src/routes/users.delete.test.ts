@@ -43,18 +43,20 @@ function remove(id: string) {
 
 describe('DELETE /api/users/:id', () => {
   it('answers 204 with an empty body and removes the row (AC1)', async () => {
-    const before = await rowCount()
+    // The first test of the file: the schema still holds the 25 seed users.
+    expect(await rowCount()).toBe(25)
 
     const res = await remove(anna.id)
 
     expect(res.status).toBe(204)
     expect(res.text).toBe('')
-    expect(await rowCount()).toBe(before - 1)
+    expect(await rowCount()).toBe(24)
     expect(await testDb.db.select().from(users).where(eq(users.id, anna.id))).toHaveLength(0)
   })
 
   it('answers 404 to a later GET and a second DELETE of the same id (AC2)', async () => {
     expect((await remove(ben.id)).status).toBe(204)
+    const afterFirst = await rowCount()
 
     const get = await request(app).get(`/api/users/${ben.id}`)
     const again = await remove(ben.id)
@@ -63,6 +65,7 @@ describe('DELETE /api/users/:id', () => {
     expect(get.body).toEqual({ message: 'User not found' })
     expect(again.status).toBe(404)
     expect(again.body).toEqual({ message: 'User not found' })
+    expect(await rowCount()).toBe(afterFirst)
   })
 
   it('answers 404 for an id that never existed (AC2)', async () => {
@@ -75,6 +78,7 @@ describe('DELETE /api/users/:id', () => {
     expect(await rowCount()).toBe(before)
   })
 
+  // Only the injection-style string is URL-encoded; the others are sent raw, so %zz must stay raw.
   it.each([
     ['a word', 'abc'],
     ['an injection-style string', encodeURIComponent('1;drop table users')],
