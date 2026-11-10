@@ -33,6 +33,7 @@ async function dirtyTheTable() {
     (await request(app).patch(`/api/users/${first.id}`).send({ firstName: 'Renamed' })).status,
   ).toBe(200)
   expect((await request(app).delete(`/api/users/${second.id}`)).status).toBe(204)
+  expect(await allRows()).not.toEqual(seedRows)
 }
 
 describe('POST /api/reset', () => {
@@ -43,7 +44,6 @@ describe('POST /api/reset', () => {
 
   it('restores exactly the 25 seed users after creates, updates and deletes (AC1)', async () => {
     await dirtyTheTable()
-    expect(await allRows()).not.toEqual(seedRows)
 
     const res = await request(app).post('/api/reset')
 
