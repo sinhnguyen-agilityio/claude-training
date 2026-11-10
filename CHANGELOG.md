@@ -8,6 +8,13 @@ All notable changes to this project are listed here, newest first. The format fo
 
 ### Added
 
+- `PATCH /api/users/:id`: change any subset of a user's fields in PostgreSQL, parsed with the shared
+  `userUpdateSchema`; answers 200 with the full user and a new `updatedAt` (`createdAt` and `id`
+  stay). The body is validated before the user is looked up, so an invalid body is a 400 even for an
+  unknown id. An empty body, or one that holds only ignored keys (`id`, `createdAt`, `updatedAt`),
+  answers 400 `Nothing to update`; an unknown or non-UUID id answers 404 `User not found`; an email
+  another user has (any letter case) answers the same 409 as `POST`, while a user's own email is not
+  a conflict (#41).
 - `POST /api/users`: create a user in PostgreSQL, parsed with the shared `userCreateSchema` (names
   trimmed, email lowercased, a blank phone stored as `null`, `status` `active` by default; `id` and
   the timestamps in the body are ignored). Answers 201 with the user, 400 `Validation failed` with
