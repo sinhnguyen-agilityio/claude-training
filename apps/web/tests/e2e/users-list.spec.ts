@@ -1,6 +1,6 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from './fixtures.js'
 
-// Each test gets a fresh browser context, so localStorage (and the mock data) starts from the seed.
+// Each test gets a fresh browser context, so the database is reset to the seed before it.
 
 test('F1: page through the user list and keep the page on reload', async ({ page }) => {
   await page.goto('/users')

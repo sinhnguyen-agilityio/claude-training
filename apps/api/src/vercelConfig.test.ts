@@ -54,7 +54,13 @@ describe('no database secret in the repository (#48 AC5)', () => {
       .split('\n')
       .filter((file) => file && !file.endsWith('pnpm-lock.yaml') && !file.endsWith('.png'))
     const url = /postgres(?:ql)?:\/\/[^:\s/]+:[^@\s]+@([^/:\s?]+)/g
-    const allowed = new Set(['localhost', '127.0.0.1', 'HOST', 'HOST-pooler.REGION.aws.neon.tech'])
+    const allowed = new Set(['localhost', '127.0.0.1', 'host', 'host-pooler.region.aws.neon.tech'])
+    // Hosts that cannot be a real database: local, placeholders, a template slot, example.com.
+    const isHarmless = (host: string) =>
+      allowed.has(host.toLowerCase()) ||
+      host.startsWith('placeholder') ||
+      host.startsWith('${') ||
+      host.endsWith('example.com')
     const found: string[] = []
 
     for (const file of files) {
@@ -66,7 +72,7 @@ describe('no database secret in the repository (#48 AC5)', () => {
       }
       for (const match of text.matchAll(url)) {
         const host = match[1] ?? ''
-        if (!allowed.has(host) && !host.startsWith('placeholder')) found.push(`${file}: ${host}`)
+        if (!isHarmless(host)) found.push(`${file}: ${host}`)
       }
     }
 

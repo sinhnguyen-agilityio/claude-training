@@ -10,13 +10,13 @@ Express API (see §2).
 
 ## 2. Architecture decisions
 
-| Decision    | Choice                                                                                         | Reason                                                                                                                                              |
-| ----------- | ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Backend     | Node.js + Express (`apps/api`), a REST API under `/api`                                        | The UI already makes real `fetch` calls, so the API replaces the mock without UI changes.                                                           |
-| Persistence | PostgreSQL through Drizzle ORM. Docker Compose with a named volume locally, Neon in production | Data survives restarts and is shared by every visitor. SQLite was dropped because serverless hosting has no durable disk.                           |
-| Validation  | One Zod schema shared by the form and the API                                                  | The client and the server can never disagree on the rules.                                                                                          |
-| Auth        | Out of scope                                                                                   | Keeps the scope small.                                                                                                                              |
-| MSW         | Vitest only (target)                                                                           | Tests keep the MSW node server. Until the frontend integration ticket (#46) merges, browsers still run the MSW mock and `pnpm e2e` runs against it. |
+| Decision    | Choice                                                                                         | Reason                                                                                                                    |
+| ----------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Backend     | Node.js + Express (`apps/api`), a REST API under `/api`                                        | The UI already makes real `fetch` calls, so the API replaces the mock without UI changes.                                 |
+| Persistence | PostgreSQL through Drizzle ORM. Docker Compose with a named volume locally, Neon in production | Data survives restarts and is shared by every visitor. SQLite was dropped because serverless hosting has no durable disk. |
+| Validation  | One Zod schema shared by the form and the API                                                  | The client and the server can never disagree on the rules.                                                                |
+| Auth        | Out of scope                                                                                   | Keeps the scope small.                                                                                                    |
+| MSW         | Vitest only (target)                                                                           | Tests keep the MSW node server. Browsers call the real API; `pnpm e2e` runs against it and PostgreSQL.                    |
 
 ## 3. Data model — `User`
 
@@ -75,8 +75,8 @@ Error body: `{ message: string, fieldErrors?: Record<string, string> }`.
 `POST /api/reset` restores them when the server runs with `ALLOW_RESET=true` (otherwise it
 answers 404). The API adds no artificial delay. Tests wait on content, never on fixed timeouts.
 
-Until #46 merges, the MSW mock stands in for the API: it seeds the 25 users on first load, answers
-`POST /api/reset` always, and delays every response by about 300 ms.
+The browser calls the real API only: no mock runs in any build. (The Vitest-only MSW node server
+answers instantly and always serves `POST /api/reset`.)
 
 ## 5. Features and acceptance criteria
 

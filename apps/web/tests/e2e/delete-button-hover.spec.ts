@@ -1,4 +1,5 @@
-import { expect, test, type Locator } from '@playwright/test'
+import type { Locator } from '@playwright/test'
+import { expect, test } from './fixtures.js'
 
 const HOVER_BLUE = 'rgb(29, 78, 216)' // #1d4ed8
 const REST_RED = 'oklch(0.505 0.213 27.518)' // Tailwind v4 red-700

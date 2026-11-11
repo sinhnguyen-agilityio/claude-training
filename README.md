@@ -3,20 +3,19 @@
 A small React + TypeScript CRUD app for managing users. It is also a training repository for
 learning to build software with [Claude Code](https://claude.com/claude-code): the app is the
 subject, and the Claude Code configuration (hooks, skills, subagents) is what the training is
-about. The backend is moving from a mock REST API ([MSW](https://mswjs.io)) persisted in
-`localStorage` to an Express + PostgreSQL API (epic #31). Until #46 merges, the app still runs on
-the mock.
+about. The backend is an Express + PostgreSQL API (epic #31); the app calls it through a `/api`
+proxy in every environment.
 
 The full spec and acceptance criteria are in [docs/SPEC.md](docs/SPEC.md).
 
 **Live demo:** <https://sinhnguyen-agilityio.github.io/claude-training/>. It shows the latest `main`
-and is deployed after CI passes. For now the data is kept in your browser's `localStorage`, so
-each visitor has their own copy; epic #31 moves it to a shared database.
+and is deployed after CI passes. **The demo is broken for now:** the app no longer ships a mock
+API and the static site has no backend. It works again when the deploy ticket of epic #31 lands.
 
 ## Tech stack
 
 React 19 · TypeScript (strict) · Vite · React Router · TanStack Query · React Hook Form + Zod ·
-Tailwind CSS · MSW · Vitest + Testing Library · Playwright · oxlint + Prettier
+Tailwind CSS · Vitest + Testing Library + MSW (tests only) · Playwright · oxlint + Prettier
 
 ## Training goals
 
@@ -36,10 +35,20 @@ version (on Node 25+, which no longer bundles Corepack, run `npm i -g corepack` 
 git clone https://github.com/sinhnguyen-agilityio/claude-training.git claude
 cd claude
 pnpm install   # also installs the Husky git hooks
-pnpm dev
+cp .env.example .env
+pnpm db:up        # Postgres in Docker
+pnpm db:migrate
+pnpm db:seed      # the 25 users
+pnpm api:dev      # API on :3001, leave it running
+pnpm dev          # in a second terminal
 ```
 
-Open <http://localhost:5173>. For E2E tests, install the browser once:
+Open <http://localhost:5173>; `/api` is proxied to the API (set `API_PROXY_TARGET` to use another
+one). `pnpm e2e` starts its own API and **resets the database it points at before every test**, so it
+refuses to run without `E2E_DATABASE_URL`, a separate migrated and seeded database:
+`E2E_DATABASE_URL=postgres://app:app@localhost:5432/users_e2e pnpm e2e` (see
+[docs/testing.md](docs/testing.md)). It also refuses the same database as `DATABASE_URL`, one named
+`users_dev`, and a non-local host (set `E2E_ALLOW_REMOTE_DB=1` to allow one). For E2E tests, install the browser once:
 
 ```bash
 pnpm --filter @app/web exec playwright install chromium
@@ -48,7 +57,7 @@ pnpm --filter @app/web exec playwright install chromium
 ## API
 
 `apps/api` is an Express 5 app (TypeScript, run with `tsx`). For now it answers the health check
-and `GET /api/users` and `GET /api/users/:id`. The browser app still uses the MSW mock until #46. The API needs
+and `GET /api/users` and `GET /api/users/:id`. The browser app calls it through the `/api` proxy. The API needs
 `DATABASE_URL` (see [Local database](#local-database)) and reads it from `.env` at the repo root.
 
 ```bash
@@ -134,6 +143,13 @@ Setting it up once, by hand:
 
 `DATABASE_URL` lives only in the Vercel project settings: it is not in the repository, and
 [.env.example](.env.example) holds placeholders. `.vercel/` (the local project link) is ignored.
+
+## CI
+
+[.github/workflows/ci.yml](.github/workflows/ci.yml) runs the jobs `web`, `api`, `e2e`,
+`claude-hooks` and `security`. `api` and `e2e` each start a `postgres:16` service and apply the
+migrations first. The old `app` job no longer exists. `main` has no required status checks today; if a
+required-checks rule is added later, it must list `web`, `api` and `e2e`.
 
 ## Scripts
 
@@ -255,7 +271,7 @@ change history is in [CHANGELOG.md](CHANGELOG.md); longer notes per feature are 
 ├── .github/          # CI and Claude workflows, CODEOWNERS
 ├── .husky/           # Git hooks: pre-commit, commit-msg and pre-push
 ├── docs/             # SPEC.md, architecture, testing, release notes
-├── apps/web/         # The React app: src (app, features, mocks, shared, test), public, tests/e2e
+├── apps/web/         # The React app: src (app, features, mocks (Vitest only), shared, test), public, tests/e2e
 ├── apps/api/         # The Express API: src/app.ts (createApp), src/server.ts (listen)
 ├── packages/shared/  # @app/shared: User schemas, list query schema, the 25 seed users
 ├── CHANGELOG.md

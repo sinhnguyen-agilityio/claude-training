@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from './fixtures.js'
 
 test('F6: reset demo data removes added users and restores the seed', async ({ page }) => {
   await page.goto('/users/new')
