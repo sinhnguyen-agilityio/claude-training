@@ -6,8 +6,23 @@ All notable changes to this project are listed here, newest first. The format fo
 
 ## [Unreleased]
 
+### Added
+
+- CI deploys to Vercel with the Vercel CLI (`ci.yml`). A pull request from this repository gets a
+  preview whose URL is posted as one comment, updated on new commits. A push to `main` deploys to
+  production once `web`, `api`, `e2e`, `claude-hooks` and `security` pass, then fails unless
+  `GET /api/health` returns 200 (retried 5 times). Pull requests from forks skip the deploy. The
+  `api` job also runs `pnpm api:bundle`. Secrets: `VERCEL_TOKEN`, `VERCEL_ORG_ID`,
+  `VERCEL_PROJECT_ID` (#49).
+
+### Removed
+
+- The GitHub Pages deploy (`deploy.yml`), `tests/e2e/subpath.spec.ts` with its CI step, and the
+  `BASE_PATH` option of Vite and Playwright (#49).
+
 ### Changed
 
+- CI no longer cancels a run in progress on `main`, so a deploy is not cut off (#49).
 - CI: the `app` job is split into `web`, `api` and `e2e`. `api` and `e2e` run against a
   `postgres:16` service with migrations applied, and the API's 80% coverage threshold is enforced.
   The old `app` name is gone: a future required-checks rule must list `web`, `api` and `e2e` (#47).

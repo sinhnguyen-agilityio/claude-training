@@ -12,9 +12,6 @@ const apiProxy = {
 
 // https://vite.dev/config/
 export default defineConfig({
-  // BASE_PATH is set by the Deploy workflow (GitHub Pages serves the app under /claude-training/)
-  // and by the CI step that runs tests/e2e/subpath.spec.ts. Everything else builds for the site root.
-  base: process.env.BASE_PATH ?? '/',
   plugins: [react(), tailwindcss()],
   server: { proxy: apiProxy },
   preview: { proxy: apiProxy },

@@ -43,37 +43,31 @@ failure), and suggest the next step. Do not fix it.
 
 ## When the PR is merged
 
-1. Check CI on the merge commit first. `Deploy` only starts after it passes:
+1. Find the CI run on the merge commit. The production deploy is its `deploy-production` job, which
+   starts only after the check jobs pass:
 
    ```bash
    gh run list --workflow CI --branch main --commit <mergeCommit sha> --json databaseId,status,conclusion,url
+   gh run view <databaseId> --json jobs --jq '.jobs[] | {name, status, conclusion}'
    ```
 
-   - Failed: report it with the failing job (as in [When a check fails](#when-a-check-fails)) and
-     stop the loop. Nothing will be deployed.
-   - Cancelled: a later push to `main` replaced it (CI cancels runs in progress). Report that this
-     merge ships with the next deploy, and stop the loop.
-
-2. Find the `Deploy` run. A run started by `workflow_run` does not carry the merge commit as its
-   SHA, so match by time instead: take the oldest run created after `mergedAt`.
-
-   ```bash
-   gh run list --workflow Deploy --event workflow_run --json databaseId,createdAt,status,conclusion,url
-   ```
-
-   - No workflow called `Deploy`: report `No Deploy workflow found` and stop the loop.
+   - A check job failed: report it with the failing job (as in
+     [When a check fails](#when-a-check-fails)) and stop the loop. Nothing is deployed.
+   - Cancelled: a later push to `main` replaced it. Report that this merge ships with the next
+     deploy, and stop the loop.
    - No run yet: wait for the next tick. Still none 30 minutes after `mergedAt`: report
-     `No Deploy run 30 minutes after the merge` with the CI run's URL, and stop the loop.
+     `No CI run 30 minutes after the merge` and stop the loop.
 
-3. When the run has finished, report its conclusion and URL. If it succeeded, check production:
+2. When `deploy-production` has finished, report its conclusion and the run's URL. It already fails
+   unless `GET /api/health` returns 200. If it succeeded, check production:
 
    ```bash
-   curl -sS -o /dev/null -w "%{http_code}" https://sinhnguyen-agilityio.github.io/claude-training/
+   curl -sS -o /dev/null -w "%{http_code}" https://snuser-mn.vercel.app/
    ```
 
    Report the status code. 200 means it is live.
 
-4. Stop the loop.
+3. Stop the loop.
 
 ## When the PR is closed without merging
 

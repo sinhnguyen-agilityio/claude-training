@@ -35,8 +35,8 @@ carry the detail; this list is the map.
    PR is opened or marked ready (drafts are skipped). For another review after fixes, comment
    `@claude review this PR`.
 9. **Watch** (`/loop 5m follow loop.md for PR #<n>`, see [loop.md](loop.md)). While the PR is open:
-   CI checks, new review comments, the mergeable state. After the merge: the `Deploy` run
-   (GitHub Pages, after CI passes on `main`) and the production URL. It stops by itself.
+   CI checks, new review comments, the mergeable state. After the merge: the `deploy-production`
+   job of CI (Vercel, after the check jobs pass on `main`) and the production URL. It stops by itself.
 10. **Merge and clean up.** The developer merges. The issue closes and the worktree is removed.
     Cutting a version: `/release-checklist <x.y.z>` (a release PR, then a `v<x.y.z>` tag).
 
