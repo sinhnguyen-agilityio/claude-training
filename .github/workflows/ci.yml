@@ -14,12 +14,30 @@ permissions:
   contents: read
 
 jobs:
-  app:
+  web:
     runs-on: ubuntu-latest
     # A hung step otherwise runs until GitHub's 6 h limit.
     timeout-minutes: 15
-    # The API tests run against a real Postgres, one schema per test file (#37). Same image and
-    # credentials as docker-compose.yml, so DATABASE_URL matches .env.example.
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: package.json
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm --filter @app/web test:coverage
+
+  api:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # The API tests run against a real Postgres, one schema per test file (#37).
+    # Same image and credentials as docker-compose.yml, so DATABASE_URL matches .env.example.
     services:
       postgres:
         image: postgres:16
@@ -49,7 +67,45 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
       - run: pnpm typecheck
-      - run: pnpm test:coverage
+      - run: pnpm --filter @app/api db:migrate
+      # Fails below the 80% threshold in apps/api/vitest.config.ts.
+      - run: pnpm --filter @app/api test:coverage
+
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Same image and credentials as docker-compose.yml, so DATABASE_URL matches .env.example.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app
+          POSTGRES_DB: users_dev
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U app -d users_dev"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://app:app@localhost:5432/users_dev
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: package.json
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      # Playwright starts the API (:3101) and the preview server itself; it needs the database
+      # migrated and seeded first. The per-test /api/reset fixture restores the 25 seed users.
+      - run: pnpm db:migrate
+      - run: pnpm db:seed
       - run: pnpm --filter @app/web exec playwright install --with-deps chromium
       # The 59 tests take under a minute. Once they finished but Playwright never exited (run 39944427327),
       # so this step is capped, and DEBUG logs how the preview server is shut down if it happens again.

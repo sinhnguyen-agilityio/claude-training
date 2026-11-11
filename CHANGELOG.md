@@ -6,6 +6,12 @@ All notable changes to this project are listed here, newest first. The format fo
 
 ## [Unreleased]
 
+### Changed
+
+- CI: the `app` job is split into `web`, `api` and `e2e`. `api` and `e2e` run against a
+  `postgres:16` service with migrations applied, and the API's 80% coverage threshold is enforced.
+  The required check `app` in branch protection must be replaced by `web`, `api` and `e2e` (#47).
+
 ### Added
 
 - `docs/agent-teams.md`: a reference for running Claude Code agent teams on this repo (when to use a

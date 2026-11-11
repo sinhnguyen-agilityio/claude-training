@@ -106,6 +106,13 @@ In Git Bash on Windows, prefix both with `MSYS_NO_PATHCONV=1`. Otherwise Git Bas
 
 Setting it up once: **Settings → Pages → Source: GitHub Actions**.
 
+## CI
+
+[.github/workflows/ci.yml](.github/workflows/ci.yml) runs the jobs `web`, `api`, `e2e`,
+`claude-hooks` and `security`. `api` and `e2e` each start a `postgres:16` service and apply the
+migrations first. **Owner:** the old `app` job no longer exists, so in the branch protection of
+`main` replace the required check `app` with `web`, `api` and `e2e`.
+
 ## Scripts
 
 | Command              | What it does                                  |
