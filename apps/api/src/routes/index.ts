@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import type { Database } from '../db/types'
 import { notFound } from '../middlewares/notFound'
-import { healthRouter } from './health'
+import { createHealthRouter } from './health'
 import { createResetRouter } from './reset'
 import { createUsersRouter } from './users'
 
@@ -24,7 +24,7 @@ export interface ApiRouterOptions {
 export function createApiRouter({ db, allowReset, extraRouter }: ApiRouterOptions = {}): Router {
   const router = Router()
 
-  router.use(healthRouter)
+  router.use(createHealthRouter(db))
   if (db) router.use('/users', createUsersRouter(db))
   if (db && allowReset) router.use(createResetRouter(db))
   if (extraRouter) router.use(extraRouter)

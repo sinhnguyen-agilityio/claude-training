@@ -16,9 +16,15 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       include: ['src/**/*.ts'],
-      // server.ts and the *.cli.ts files only call code that is tested elsewhere (createApp(),
+      // server.ts, vercel.ts and the *.cli.ts files only call code that is tested elsewhere (createApp(),
       // runMigrations(), seedDatabase()). src/test holds the test helpers.
-      exclude: ['src/**/*.test.ts', 'src/server.ts', 'src/db/*.cli.ts', 'src/test/**'],
+      exclude: [
+        'src/**/*.test.ts',
+        'src/server.ts',
+        'src/vercel.ts',
+        'src/db/*.cli.ts',
+        'src/test/**',
+      ],
       reporter: ['text', 'html'],
       // Same 80% floor as the web app (SPEC §6).
       thresholds: { lines: 80, statements: 80, functions: 80, branches: 80 },

@@ -6,3 +6,6 @@ export const EMAIL_IN_USE = 'Email is already in use'
 
 /** The message of the 400 for a PATCH that holds no field to change (SPEC §4). */
 export const NOTHING_TO_UPDATE = 'Nothing to update'
+
+/** The message of the 503 from `GET /api/health` when `select 1` fails or takes over 5 seconds (#48). */
+export const DATABASE_UNAVAILABLE = 'Database unavailable'

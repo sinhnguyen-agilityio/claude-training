@@ -1,6 +1,9 @@
 import { Router } from 'express'
-import { getHealth } from '../controllers/health'
+import { createGetHealth } from '../controllers/health'
+import type { Database } from '../db/types'
 
-export const healthRouter = Router()
-
-healthRouter.get('/health', getHealth)
+export function createHealthRouter(db?: Database): Router {
+  const router = Router()
+  router.get('/health', createGetHealth(db))
+  return router
+}

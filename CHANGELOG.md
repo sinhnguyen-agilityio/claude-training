@@ -22,6 +22,11 @@ All notable changes to this project are listed here, newest first. The format fo
 
 ### Added
 
+- Vercel deploy config: `vercel.json` (static `apps/web/dist`, `/api/(.*)` to the API function,
+  every other path to `/index.html`, region `sin1`, Git deploys off), the function entry
+  `api/index.mjs` bundled from `apps/api/src/vercel.ts` by `pnpm api:bundle`, and a README section
+  for the Vercel and Neon setup. `GET /api/health` now runs `select 1` with a 5-second limit and
+  answers 503 `{ "message": "Database unavailable" }` when the database cannot be reached (#48).
 - `docs/agent-teams.md`: a reference for running Claude Code agent teams on this repo (when to use a
   team, how to enable it, how to write the team prompt, the gates, worktrees and known limits) (#72).
 - `GET /api/users/export`: every user that matches `q`, `role`, `status`, `sort` and `order`, in the

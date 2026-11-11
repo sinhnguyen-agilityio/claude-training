@@ -8,6 +8,7 @@
     "build": "pnpm --filter @app/web build",
     "preview": "pnpm --filter @app/web preview",
     "api:dev": "pnpm --filter @app/api dev",
+    "api:bundle": "pnpm --filter @app/api bundle",
     "db:up": "docker compose up -d --wait db",
     "db:down": "docker compose down",
     "db:destroy": "docker compose down -v",
