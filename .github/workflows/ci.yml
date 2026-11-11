@@ -217,10 +217,8 @@ jobs:
         with:
           script: |
             const marker = '<!-- vercel-preview -->'
-            const body = `${marker}
-Preview: ${process.env.PREVIEW_URL}
-
-Commit ${context.sha.slice(0, 7)}`
+            const lines = [marker, '', `Preview: ${process.env.PREVIEW_URL}`, '', `Commit ${context.sha.slice(0, 7)}`]
+            const body = lines.join(String.fromCharCode(10))
             const { owner, repo } = context.repo
             const issue_number = context.issue.number
             const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number })
@@ -263,7 +261,8 @@ Commit ${context.sha.slice(0, 7)}`
       - name: Show the deployment URL
         env:
           DEPLOY_URL: ${{ steps.deploy.outputs.url }}
-        run: echo "Production deployment: $DEPLOY_URL" >> "$GITHUB_STEP_SUMMARY"
+        run: |
+          echo "Production deployment: $DEPLOY_URL" >> "$GITHUB_STEP_SUMMARY"
       # GET /api/health is 200 when the database answers, 503 when it does not (#48). It is checked on
       # the public production domain: the per-deployment URL can be behind Vercel Deployment Protection
       # (401). The new deployment can take a few seconds to be served, so it is retried.
