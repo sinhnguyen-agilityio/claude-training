@@ -8,9 +8,7 @@ proxy in every environment.
 
 The full spec and acceptance criteria are in [docs/SPEC.md](docs/SPEC.md).
 
-**Live demo:** <https://sinhnguyen-agilityio.github.io/claude-training/>. It shows the latest `main`
-and is deployed after CI passes. **The demo is broken for now:** the app no longer ships a mock
-API and the static site has no backend. It works again when the deploy ticket of epic #31 lands.
+**Live demo:** <https://snuser-mn.vercel.app>. It shows the latest `main` and is deployed after CI passes.
 
 ## Tech stack
 
@@ -100,20 +98,17 @@ created. After changing them in `.env`, run `pnpm db:destroy` and then `pnpm db:
 
 ## Deploy
 
-[.github/workflows/deploy.yml](.github/workflows/deploy.yml) publishes `main` to GitHub Pages
-after the CI workflow passes on it (or when run by hand from the Actions tab). Pages serves the app
-under `/claude-training/`, so that workflow builds with `BASE_PATH=/claude-training/`. Every other
-build, E2E included, uses `/`. To try the Pages build locally:
+The jobs `deploy-preview` and `deploy-production` in [.github/workflows/ci.yml](.github/workflows/ci.yml)
+deploy with the Vercel CLI, and only after `web`, `api`, `e2e`, `claude-hooks` and `security` pass:
 
-```bash
-BASE_PATH=/claude-training/ pnpm build
-BASE_PATH=/claude-training/ pnpm preview   # http://localhost:4173/claude-training/
-```
+- **Pull request from this repository:** a preview deployment. Its URL is posted as one comment,
+  updated on each new commit. A pull request from a fork has no access to the secrets, so the
+  deploy is skipped.
+- **Push to `main`:** `vercel pull`, `vercel build --prod` and `vercel deploy --prebuilt --prod`,
+  then `GET /api/health` on the new deployment, retried 5 times, which must return 200.
 
-In Git Bash on Windows, prefix both with `MSYS_NO_PATHCONV=1`. Otherwise Git Bash rewrites
-`/claude-training/` into a Windows path.
-
-Setting it up once: **Settings → Pages → Source: GitHub Actions**.
+Secrets (Settings → Secrets and variables → Actions, set by hand; the workflow passes them only as
+environment variables and never prints them): `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`.
 
 ### Vercel and Neon (the hosted API)
 
@@ -123,7 +118,7 @@ function in [api/index.mjs](api/index.mjs) and every other path to `/index.html`
 `/users/<id>` loads the SPA. The build command also runs `pnpm api:bundle`, which bundles
 `apps/api/src/vercel.ts` (the same `createApp()` that `server.ts` listens on) into the function.
 The function runs in `sin1`, next to the database. `git.deploymentEnabled` is `false`: the deploy
-comes from GitHub Actions (#49), not from Vercel's Git integration.
+comes from GitHub Actions (see above), not from Vercel's Git integration.
 
 Setting it up once, by hand:
 

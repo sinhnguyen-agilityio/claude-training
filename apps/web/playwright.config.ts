@@ -8,15 +8,12 @@ const { port: PORT, apiPort: API_PORT, databaseUrl: DATABASE_URL } = resolveE2eE
 
 export default defineConfig({
   testDir: './tests/e2e',
-  // A BASE_PATH build only runs the subpath spec: the others use absolute paths that leave the base.
-  ...(process.env.BASE_PATH ? { testMatch: 'subpath.spec.ts' } : {}),
   // One database is shared by every test and each test resets it, so tests run one at a time.
   fullyParallel: false,
   workers: 1,
   reporter: 'list',
   use: {
-    // With BASE_PATH set (only for tests/e2e/subpath.spec.ts), relative paths resolve under it.
-    baseURL: `http://localhost:${PORT}${process.env.BASE_PATH ?? ''}`,
+    baseURL: `http://localhost:${PORT}`,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },

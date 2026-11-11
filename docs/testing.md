@@ -57,17 +57,4 @@ How tests are written and run. Read this before adding or changing a test.
   in-page `fetch` override.
   `tests/e2e/accessibility.spec.ts` covers axe checks and the 375 px layout. SPEC §6 requires an
   E2E journey for each feature.
-- `pnpm e2e` builds for base `/`. GitHub Pages serves the app under `/claude-training/`, which
-  `tests/e2e/subpath.spec.ts` covers: the redirect, a reload on a user's page, create and reload,
-  and that `/api` is still called at the root with no service worker. The reload is answered by `vite preview`'s own SPA fallback, so
-  the `404.html` copy that Pages relies on (`deploy.yml`) is not tested here. The spec is skipped
-  unless `BASE_PATH` is set. CI runs it as a separate step of the `e2e` job after `pnpm e2e`. Locally:
-
-  ```bash
-  MSYS_NO_PATHCONV=1 BASE_PATH=/claude-training/ E2E_PORT=4180 pnpm --filter @app/web exec playwright test tests/e2e/subpath.spec.ts
-  ```
-
-  (`MSYS_NO_PATHCONV=1` stops Git Bash from rewriting the path; use a port nothing else is
-  listening on.) `BASE_PATH` is appended to `baseURL`, so this spec uses relative paths
-  (`goto('./')`). The other specs use absolute paths such as `goto('/users')`, which leave the
-  base path, so with `BASE_PATH` set `playwright.config.ts` runs only the subpath spec.
+- `pnpm e2e` builds for base `/`.

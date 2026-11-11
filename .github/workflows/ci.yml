@@ -8,7 +8,8 @@ on:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  # A newer push cancels the older run of a branch, but never a run on main: it may be deploying.
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 permissions:
   contents: read
@@ -74,6 +75,9 @@ jobs:
       # AC2 of #47. The tests build their own schema per file (createTestDb), so they do not need
       # this; it checks that the migrations apply to a fresh database and matches the e2e job.
       - run: pnpm --filter @app/api db:migrate
+      # The Vercel function is this bundle (#48). A change esbuild cannot bundle fails here, before a deploy.
+      - run: pnpm api:bundle
+      - run: test -s apps/api/dist/vercel.mjs
       # Fails below the 80% threshold in apps/api/vitest.config.ts.
       - run: pnpm --filter @app/api test:coverage
 
@@ -125,21 +129,12 @@ jobs:
           DATABASE_URL: ${{ env.E2E_DATABASE_URL }}
       - run: pnpm --filter @app/web exec playwright install --with-deps chromium
       # timeout-minutes: 8 applies to this step only; the job-level 15 also covers install, the
-      # Playwright download and the subpath smoke, and is intentional.
+      # Playwright download, and is intentional.
       # The 59 tests take under a minute. Once they finished but Playwright never exited (run 39944427327),
       # so this step is capped, and DEBUG logs how the preview server is shut down if it happens again.
       - run: pnpm e2e
         timeout-minutes: 8
         env:
-          DEBUG: pw:webserver
-      # GitHub Pages serves the app under /claude-training/ (deploy.yml), so the base path is tested
-      # here, on its own build and port, before it can break the deployed site (#26).
-      - name: Smoke E2E under /claude-training/
-        run: pnpm --filter @app/web exec playwright test tests/e2e/subpath.spec.ts
-        timeout-minutes: 5
-        env:
-          BASE_PATH: /claude-training/
-          E2E_PORT: 4180
           DEBUG: pw:webserver
       - if: failure()
         uses: actions/upload-artifact@v4
@@ -181,3 +176,101 @@ jobs:
       - run: pnpm install --frozen-lockfile
       # Fails on known high or critical advisories in the dependencies that ship to users.
       - run: pnpm audit --prod --audit-level=high
+
+  # Deploys (#49). vercel.json turns off Vercel's own Git deployments, so these jobs are the only way
+  # to deploy. Both wait for every check job above; a failing job skips them. VERCEL_TOKEN,
+  # VERCEL_ORG_ID and VERCEL_PROJECT_ID are repository secrets: they are only passed as environment
+  # variables (the CLI reads them), never on a command line, and GitHub masks them in the logs.
+  deploy-preview:
+    needs: [web, api, e2e, claude-hooks, security]
+    # Secrets are not available to a pull request from a fork, so those are skipped.
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: write
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: package.json
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm dlx vercel@65.14.0 pull --yes --environment=preview
+      - run: pnpm dlx vercel@65.14.0 build
+      - name: Deploy the preview
+        id: deploy
+        run: echo "url=$(pnpm dlx vercel@65.14.0 deploy --prebuilt)" >> "$GITHUB_OUTPUT"
+      # One comment per pull request: found by its marker and updated on the next commit.
+      - uses: actions/github-script@v7
+        env:
+          PREVIEW_URL: ${{ steps.deploy.outputs.url }}
+        with:
+          script: |
+            const marker = '<!-- vercel-preview -->'
+            const body = `${marker}
+Preview: ${process.env.PREVIEW_URL}
+
+Commit ${context.sha.slice(0, 7)}`
+            const { owner, repo } = context.repo
+            const issue_number = context.issue.number
+            const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number })
+            const existing = comments.find((c) => c.body?.startsWith(marker))
+            if (existing) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body })
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body })
+            }
+
+  deploy-production:
+    needs: [web, api, e2e, claude-hooks, security]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Its own queue: a second push waits for the running deploy instead of cancelling it halfway.
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: package.json
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm dlx vercel@65.14.0 pull --yes --environment=production
+      - run: pnpm dlx vercel@65.14.0 build --prod
+      - name: Deploy to production
+        id: deploy
+        run: echo "url=$(pnpm dlx vercel@65.14.0 deploy --prebuilt --prod)" >> "$GITHUB_OUTPUT"
+      # GET /api/health is 200 when the database answers, 503 when it does not (#48). The deployment
+      # can take a few seconds to serve, so it is retried before the job fails.
+      - name: Check /api/health
+        env:
+          DEPLOY_URL: ${{ steps.deploy.outputs.url }}
+        run: |
+          for attempt in 1 2 3 4 5; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "$DEPLOY_URL/api/health" || true)
+            echo "attempt $attempt: HTTP $code"
+            if [ "$code" = "200" ]; then exit 0; fi
+            sleep 10
+          done
+          echo "::error::$DEPLOY_URL/api/health did not return 200"
+          exit 1
