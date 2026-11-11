@@ -97,6 +97,8 @@ jobs:
           --health-retries 10
     env:
       DATABASE_URL: postgres://app:app@localhost:5432/users_dev
+      # Playwright refuses to start without it (#46): the service container, migrated and seeded below.
+      E2E_DATABASE_URL: postgres://app:app@localhost:5432/users_dev
     steps:
       - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v4
