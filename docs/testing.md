@@ -2,11 +2,16 @@
 
 How tests are written and run. Read this before adding or changing a test.
 
+> **CI jobs** (`.github/workflows/ci.yml`): `web` (lint, typecheck, web coverage), `api` (lint,
+> typecheck, migrations, API coverage against a `postgres:16` service), `e2e` (Playwright, with its
+> own `postgres:16` service and a separate `users_e2e` database, migrated and seeded), `claude-hooks` and `security`. Both coverage runs
+> enforce the 80% threshold of their package. A required-checks rule, if one is added, must list `web`, `api` and `e2e`.
+
 > Until #46 merges, E2E runs against the browser's MSW mock. After it, MSW stays only as the
 > Vitest network layer and E2E runs against the Express API and PostgreSQL.
 
 - API tests (`apps/api`) use Vitest and supertest against `createApp()`: no port is opened. Tests
-  that touch the database need Postgres, so run `pnpm db:up` first (CI has a `postgres:16` service).
+  that touch the database need Postgres, so run `pnpm db:up` first (the CI `api` and `e2e` jobs have a `postgres:16` service).
   Run them with `pnpm --filter @app/api test`.
 - **A database per test file.** `createTestDb({ seed? })` from `apps/api/src/test/createTestDb.ts`
   creates a Postgres schema named `test_<random>`, applies the migrations in it (the `"public".`
@@ -38,7 +43,7 @@ How tests are written and run. Read this before adding or changing a test.
   `tests/e2e/subpath.spec.ts` covers: the redirect, a reload on a user's page, create and reload,
   and the service worker scope. The reload is answered by `vite preview`'s own SPA fallback, so
   the `404.html` copy that Pages relies on (`deploy.yml`) is not tested here. The spec is skipped
-  unless `BASE_PATH` is set. CI runs it as a separate step after `pnpm e2e`. Locally:
+  unless `BASE_PATH` is set. CI runs it as a separate step of the `e2e` job after `pnpm e2e`. Locally:
 
   ```bash
   MSYS_NO_PATHCONV=1 BASE_PATH=/claude-training/ E2E_PORT=4180 pnpm --filter @app/web exec playwright test tests/e2e/subpath.spec.ts
