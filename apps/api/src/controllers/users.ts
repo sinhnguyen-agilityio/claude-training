@@ -1,12 +1,20 @@
-import type { UserCreate, UsersQuery, UserUpdate } from '@app/shared'
+import type {
+  BulkRequestParsed,
+  UserCreate,
+  UsersExportQuery,
+  UsersQuery,
+  UserUpdate,
+} from '@app/shared'
 import type { RequestHandler, Response } from 'express'
 import { HTTP_STATUS } from '../constants/http'
 import { EMAIL_IN_USE, NOTHING_TO_UPDATE, USER_NOT_FOUND } from '../constants/messages'
 import type { Database } from '../db/types'
 import {
+  bulkUsers,
   createUser,
   deleteUser,
   EmailTakenError,
+  exportUsers,
   getUser,
   listUsers,
   updateUser,
@@ -26,6 +34,12 @@ export function createUsersController(db: Database) {
     // validate() has parsed the query with usersQuerySchema; Express 5 leaves req.query read-only.
     const query = req.validated?.query as UsersQuery
     res.json(await listUsers(db, query))
+  })
+
+  const exportList: RequestHandler = asyncHandler(async (req, res) => {
+    // validate() has parsed the query with usersExportQuerySchema: page and pageSize are dropped.
+    const query = req.validated?.query as UsersExportQuery
+    res.json(await exportUsers(db, query))
   })
 
   const get: RequestHandler = asyncHandler(async (req, res) => {
@@ -80,5 +94,11 @@ export function createUsersController(db: Database) {
     res.status(HTTP_STATUS.NO_CONTENT).end()
   })
 
-  return { list, get, create, update, remove }
+  const bulk: RequestHandler = asyncHandler(async (req, res) => {
+    // validate() has parsed the body with bulkRequestSchema: the ids are distinct, 1 to 50.
+    const input = req.validated?.body as BulkRequestParsed
+    res.json(await bulkUsers(db, input))
+  })
+
+  return { list, exportList, get, create, update, remove, bulk }
 }

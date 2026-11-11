@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { USER_STATUSES } from '@app/shared'
+import { USER_STATUSES } from './schema'
 
 /** Most ids one bulk request may carry, counted after duplicates are removed (SPEC F7). */
 export const MAX_BULK_IDS = 50
@@ -16,7 +16,17 @@ const idsSchema = z
     error: 'ids must be an array',
   })
   .max(MAX_BULK_ENTRIES, `At most ${MAX_BULK_ENTRIES} ids per request`)
-  .transform((ids) => [...new Set(ids)])
+  // Ids that differ only in letter case are one id (stored ids are lowercase UUIDs); the first
+  // spelling is kept, in request order. The 50-id cap is checked on this set.
+  .transform((ids) => {
+    const seen = new Set<string>()
+    return ids.filter((id) => {
+      const key = id.toLowerCase()
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+  })
   .pipe(
     z
       .array(z.string())
@@ -40,6 +50,9 @@ export const bulkRequestSchema = z.discriminatedUnion(
 
 /** The wire shape (before duplicates are removed), which is what a client sends. */
 export type BulkRequest = z.input<typeof bulkRequestSchema>
+
+/** The body after parsing: the ids are distinct (what the API service receives). */
+export type BulkRequestParsed = z.output<typeof bulkRequestSchema>
 
 export interface BulkFailure {
   id: string

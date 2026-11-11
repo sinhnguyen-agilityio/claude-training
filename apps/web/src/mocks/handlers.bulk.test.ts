@@ -41,6 +41,13 @@ describe('POST /api/users/bulk', () => {
     expect(after.updatedAt > before.updatedAt).toBe(true)
   })
 
+  it('treats ids that differ only in letter case as one id, like the API (A5)', async () => {
+    const response = await bulk({ action: 'delete', ids: [first, first.toUpperCase()] })
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({ succeeded: [first], failed: [] })
+    expect((await api(`/api/users/${first}`)).status).toBe(404)
+  })
+
   it('removes duplicate ids and reports an unknown id as not_found with a 200', async () => {
     const response = await bulk({ action: 'delete', ids: [first, first, 'missing', 'missing'] })
     expect(response.status).toBe(200)

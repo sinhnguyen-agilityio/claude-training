@@ -1,7 +1,7 @@
 import { delay, http, HttpResponse } from 'msw'
 import type { z } from 'zod'
 import type { ApiErrorBody } from '@/features/users/api/client'
-import { bulkRequestSchema, type BulkResult } from '@/features/users/bulkSchema'
+import { bulkRequestSchema, type BulkResult } from '@app/shared'
 import {
   userCreateSchema,
   usersExportQuerySchema,
@@ -82,17 +82,21 @@ export function createHandlers(
       await latency()
       const input = bulkRequestSchema.safeParse(await readJson(request))
       if (!input.success) return validationError('Validation failed', input.error)
+      // The schema has removed duplicates, letter case ignored (A5). Stored ids are lowercase.
       const { ids } = input.data
+      const keys = ids.map((id) => id.toLowerCase())
       const done = new Set(
         input.data.action === 'delete'
-          ? repository.removeMany(ids)
-          : repository.updateMany(ids, { status: input.data.status }),
+          ? repository.removeMany(keys)
+          : repository.updateMany(keys, { status: input.data.status }),
       )
       // The repository only skips ids that match no user, so `not_found` is the one failure
       // reason today. Give `removeMany`/`updateMany` a per-id result before adding another.
       const result: BulkResult = {
-        succeeded: ids.filter((id) => done.has(id)),
-        failed: ids.filter((id) => !done.has(id)).map((id) => ({ id, reason: 'not_found' })),
+        succeeded: ids.filter((id) => done.has(id.toLowerCase())),
+        failed: ids
+          .filter((id) => !done.has(id.toLowerCase()))
+          .map((id) => ({ id, reason: 'not_found' })),
       }
       return HttpResponse.json(result)
     }),

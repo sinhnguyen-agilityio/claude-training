@@ -10,6 +10,16 @@ All notable changes to this project are listed here, newest first. The format fo
 
 - `docs/agent-teams.md`: a reference for running Claude Code agent teams on this repo (when to use a
   team, how to enable it, how to write the team prompt, the gates, worktrees and known limits) (#72).
+- `GET /api/users/export`: every user that matches `q`, `role`, `status`, `sort` and `order`, in the
+  list's order, as `{ data, total }` with no paging and no row cap. `page` and `pageSize` are
+  ignored, even invalid ones; an invalid filter is the list's 400. It shares the list's filter and
+  sort code (#45).
+- `POST /api/users/bulk`: delete or set the status of up to 50 users in PostgreSQL in one statement,
+  parsed with the shared `bulkRequestSchema`; answers 200 `{ succeeded, failed }`, where an unknown
+  or non-UUID id is `{ id, reason: "not_found" }`. Duplicate ids (letter case ignored) are handled
+  once, `setStatus` moves `updatedAt` on every user it reaches, and an invalid body is a 400. The
+  schema moved from the web app to `@app/shared`; the web importers only changed their import path
+  (#44).
 - `POST /api/reset`: put the 25 seed users back in PostgreSQL (the same code as `pnpm db:seed`, in
   one transaction, so a failed insert leaves the rows untouched); answers 204 with an empty body
   and ignores any request body. The route exists only when `ALLOW_RESET=true`; otherwise it answers

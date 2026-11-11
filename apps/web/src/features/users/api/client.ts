@@ -1,4 +1,4 @@
-import type { BulkRequest, BulkResult } from '@/features/users/bulkSchema'
+import type { BulkRequest, BulkResult } from '@app/shared'
 import {
   type User,
   type UserCreateInput,
