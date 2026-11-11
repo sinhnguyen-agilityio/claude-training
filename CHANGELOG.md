@@ -8,6 +8,8 @@ All notable changes to this project are listed here, newest first. The format fo
 
 ### Added
 
+- `docs/agent-teams.md`: a reference for running Claude Code agent teams on this repo (when to use a
+  team, how to enable it, how to write the team prompt, the gates, worktrees and known limits) (#72).
 - `POST /api/reset`: put the 25 seed users back in PostgreSQL (the same code as `pnpm db:seed`, in
   one transaction, so a failed insert leaves the rows untouched); answers 204 with an empty body
   and ignores any request body. The route exists only when `ALLOW_RESET=true`; otherwise it answers
