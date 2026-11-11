@@ -105,10 +105,24 @@ deploy with the Vercel CLI, and only after `web`, `api`, `e2e`, `claude-hooks` a
   updated on each new commit. A pull request from a fork has no access to the secrets, so the
   deploy is skipped.
 - **Push to `main`:** `vercel pull`, `vercel build --prod` and `vercel deploy --prebuilt --prod`,
-  then `GET /api/health` on the new deployment, retried 5 times, which must return 200.
+  then `GET https://snuser-mn.vercel.app/api/health` (5 tries, 10 s apart, 15 s per request). It must
+  return 200 and its `x-vercel-deployment-url` header must be the deployment just made, so an older
+  deployment cannot pass. Deploys queue: the newest `main` commit always deploys, an intermediate
+  pending one may be skipped.
 
-Secrets (Settings → Secrets and variables → Actions, set by hand; the workflow passes them only as
-environment variables and never prints them): `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`.
+Setting it up once (the owner, by hand):
+
+1. Add the three repository secrets (Settings → Secrets and variables → Actions): `VERCEL_TOKEN`,
+   `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`. The workflow passes them only as environment variables and
+   never prints them.
+2. Turn off GitHub Pages (Settings → Pages), since the app is no longer deployed there.
+3. In the Vercel project: Node.js 22.x or later, and Root Directory = the repository root.
+4. Deployment Protection must leave the production alias (`snuser-mn.vercel.app`) public, or the
+   health check gets a 401.
+5. Production environment: `DATABASE_URL` pointing at a Neon database that is migrated and seeded.
+6. Preview environment: its **own** Neon branch or database, with its own `DATABASE_URL` and
+   `ALLOW_RESET=true` set only for Preview. Never share the production database with previews, and
+   never set `ALLOW_RESET=true` on a Preview that points at production data.
 
 ### Vercel and Neon (the hosted API)
 

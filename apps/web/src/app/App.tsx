@@ -5,7 +5,8 @@ import { createQueryClient } from '@/app/queryClient'
 import { routes } from '@/app/routes'
 import { ToastProvider } from '@/shared/ui/ToastProvider'
 
-// BASE_URL is Vite's `base` ('/' or e.g. '/claude-training/'); React Router wants no trailing slash.
+// BASE_URL is Vite's `base`, always '/' since the GitHub Pages sub-path was dropped (#49). React Router
+// wants no trailing slash.
 const router = createBrowserRouter(routes, {
   basename: import.meta.env.BASE_URL.replace(/\/$/, '') || '/',
 })

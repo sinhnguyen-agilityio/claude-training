@@ -14,6 +14,10 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  # The Vercel CLI version, pinned in one place. The deploy jobs run it as `pnpm dlx "$VERCEL_CLI"`.
+  VERCEL_CLI: vercel@65.14.0
+
 jobs:
   web:
     runs-on: ubuntu-latest
@@ -183,8 +187,8 @@ jobs:
   # variables (the CLI reads them), never on a command line, and GitHub masks them in the logs.
   deploy-preview:
     needs: [web, api, e2e, claude-hooks, security]
-    # Secrets are not available to a pull request from a fork, so those are skipped.
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    # Secrets are not available to a pull request from a fork or to Dependabot, so those are skipped.
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -205,11 +209,24 @@ jobs:
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
-      - run: pnpm dlx vercel@65.14.0 pull --yes --environment=preview
-      - run: pnpm dlx vercel@65.14.0 build
+      - run: pnpm dlx "$VERCEL_CLI" pull --yes --environment=preview
+      - run: pnpm dlx "$VERCEL_CLI" build
+      # The deploy is its own statement, so a failure fails the step. (Inside `echo "url=$(...)"`
+      # the exit status of the deploy is lost and an empty URL would be written.)
       - name: Deploy the preview
         id: deploy
-        run: echo "url=$(pnpm dlx vercel@65.14.0 deploy --prebuilt)" >> "$GITHUB_OUTPUT"
+        run: |
+          set -euo pipefail
+          if ! url=$(pnpm dlx "$VERCEL_CLI" deploy --prebuilt 2>deploy.err | tail -n 1); then
+            echo "::error::vercel deploy failed"
+            cat deploy.err
+            exit 1
+          fi
+          if ! [[ "$url" =~ ^https://[^[:space:]]+$ ]]; then
+            echo "::error::vercel deploy did not print one https URL"
+            exit 1
+          fi
+          echo "url=$url" >> "$GITHUB_OUTPUT"
       # One comment per pull request: found by its marker and updated on the next commit.
       - uses: actions/github-script@v7
         env:
@@ -217,12 +234,16 @@ jobs:
         with:
           script: |
             const marker = '<!-- vercel-preview -->'
-            const lines = [marker, '', `Preview: ${process.env.PREVIEW_URL}`, '', `Commit ${context.sha.slice(0, 7)}`]
+            const sha = context.payload.pull_request.head.sha
+            const lines = [marker, '', `Preview: ${process.env.PREVIEW_URL}`, '', `Commit ${sha.slice(0, 7)}`]
             const body = lines.join(String.fromCharCode(10))
             const { owner, repo } = context.repo
             const issue_number = context.issue.number
             const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number })
-            const existing = comments.find((c) => c.body?.startsWith(marker))
+            // Only the comment this workflow wrote: by the bot, and starting with the marker.
+            const existing = comments.find(
+              (c) => c.user?.login === 'github-actions[bot]' && c.body?.startsWith(marker),
+            )
             if (existing) {
               await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body })
             } else {
@@ -235,6 +256,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     # Its own queue: a second push waits for the running deploy instead of cancelling it halfway.
+    # GitHub keeps one running and one pending run per group, so when several pushes arrive during
+    # a deploy an intermediate pending run is replaced: the newest main commit always deploys, an
+    # intermediate one may be skipped.
     concurrency:
       group: deploy-production
       cancel-in-progress: false
@@ -253,28 +277,42 @@ jobs:
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
-      - run: pnpm dlx vercel@65.14.0 pull --yes --environment=production
-      - run: pnpm dlx vercel@65.14.0 build --prod
+      - run: pnpm dlx "$VERCEL_CLI" pull --yes --environment=production
+      - run: pnpm dlx "$VERCEL_CLI" build --prod
+      # The deploy is its own statement, so a failure fails the step (see the preview job).
       - name: Deploy to production
         id: deploy
-        run: echo "url=$(pnpm dlx vercel@65.14.0 deploy --prebuilt --prod)" >> "$GITHUB_OUTPUT"
-      - name: Show the deployment URL
-        env:
-          DEPLOY_URL: ${{ steps.deploy.outputs.url }}
         run: |
-          echo "Production deployment: $DEPLOY_URL" >> "$GITHUB_STEP_SUMMARY"
+          set -euo pipefail
+          if ! url=$(pnpm dlx "$VERCEL_CLI" deploy --prebuilt --prod 2>deploy.err | tail -n 1); then
+            echo "::error::vercel deploy failed"
+            cat deploy.err
+            exit 1
+          fi
+          if ! [[ "$url" =~ ^https://[^[:space:]]+$ ]]; then
+            echo "::error::vercel deploy did not print one https URL"
+            exit 1
+          fi
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "Production deployment: $url" >> "$GITHUB_STEP_SUMMARY"
       # GET /api/health is 200 when the database answers, 503 when it does not (#48). It is checked on
       # the public production domain: the per-deployment URL can be behind Vercel Deployment Protection
-      # (401). The new deployment can take a few seconds to be served, so it is retried.
+      # (401). The new deployment can take a few seconds to be served, so it is retried. Vercel sends
+      # the host of the deployment that answered in x-vercel-deployment-url; it must be the one just
+      # deployed, so an older deployment that is still served cannot pass the check.
       - name: Check /api/health
         env:
           HEALTH_URL: https://snuser-mn.vercel.app/api/health
+          DEPLOY_URL: ${{ steps.deploy.outputs.url }}
         run: |
+          expected="${DEPLOY_URL#https://}"
           for attempt in 1 2 3 4 5; do
-            code=$(curl -s -o /dev/null -w '%{http_code}' "$HEALTH_URL" || true)
-            echo "attempt $attempt: HTTP $code"
-            if [ "$code" = "200" ]; then exit 0; fi
+            rm -f headers.txt
+            code=$(curl -s --max-time 15 -o /dev/null -D headers.txt -w '%{http_code}' "$HEALTH_URL" || true)
+            served=$(grep -i '^x-vercel-deployment-url:' headers.txt 2>/dev/null | tr -d '\r' | awk '{print $2}' || true)
+            echo "attempt $attempt: HTTP $code, served by ${served:-unknown}"
+            if [ "$code" = "200" ] && [ "$served" = "$expected" ]; then exit 0; fi
             sleep 10
           done
-          echo "::error::$HEALTH_URL did not return 200"
+          echo "::error::$HEALTH_URL did not return 200 from $expected"
           exit 1
