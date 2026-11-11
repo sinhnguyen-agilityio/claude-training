@@ -46,5 +46,6 @@ describe('GET /api/health with a database', () => {
 
     expect(res.status).toBe(503)
     expect(res.body).toEqual({ message: 'Database unavailable' })
+    expect(hang).toHaveBeenCalledTimes(1)
   })
 })

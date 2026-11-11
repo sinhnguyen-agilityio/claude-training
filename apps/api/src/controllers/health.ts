@@ -18,6 +18,9 @@ function timeout(ms: number): { promise: Promise<never>; clear: () => void } {
 /**
  * 200 `{ status: "ok" }`. With a database it first runs `select 1` (5-second limit) and answers
  * 503 `{ message }` when that fails, so a host health check sees an unreachable database.
+ *
+ * The race only stops waiting: a hung `select 1` keeps its pool connection (one of 5) after the
+ * 503. Low risk, since it happens only when the database is already unreachable.
  */
 export function createGetHealth(db?: Database): RequestHandler {
   return async (_req, res) => {

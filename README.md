@@ -124,8 +124,11 @@ Setting it up once, by hand:
    a connection string by hand.
 3. Set `ALLOW_RESET=true` on the project (the demo's Reset button needs it).
 4. Run `pnpm db:migrate && pnpm db:seed` against Neon once, and again after a schema change
-   (migrations are manual, A1 of #48). Take the connection string from the Vercel dashboard and
-   keep it in your shell or an untracked `.env`; never commit it.
+   (migrations are manual, A1 of #48). Step 2 is about the project settings; this one needs the
+   string once on your machine. Take it from the Vercel dashboard and keep it only in the
+   current shell session or an untracked file, never in the shell history (read it with
+   `read -rs DATABASE_URL && export DATABASE_URL`, or start the `export` with a space). Delete
+   it when the commands are done, and never commit it.
 5. Check `GET /api/health` on the deployed URL: 200 `{ "status": "ok" }`, or 503
    `{ "message": "Database unavailable" }` when `select 1` fails or takes over 5 seconds.
 
