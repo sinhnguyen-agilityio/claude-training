@@ -1,7 +1,7 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from './fixtures.js'
 
 test('F1: an API failure shows an error, and Retry recovers', async ({ page }) => {
-  // page.route() cannot see requests answered by the MSW service worker, so fail them in the page.
+  // Fail the requests in the page (a fetch override), as before the real API.
   // The first load is retried once, so fail two requests to reach the error state.
   await page.addInitScript(() => {
     const originalFetch = window.fetch

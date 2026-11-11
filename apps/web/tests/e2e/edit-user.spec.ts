@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from './fixtures.js'
 
 test('F4: edit a user and see the change on the detail page', async ({ page }) => {
   await page.goto('/users')
