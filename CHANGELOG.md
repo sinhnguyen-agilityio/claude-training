@@ -13,7 +13,8 @@ All notable changes to this project are listed here, newest first. The format fo
   (`mocks/browser.ts`, `public/mockServiceWorker.js` and the worker start in `main.tsx`); MSW stays
   for Vitest. `pnpm e2e` starts the API with `ALLOW_RESET=true` on `E2E_API_PORT` and resets the
   database before each test, with one worker. It refuses to start without `E2E_DATABASE_URL`, so it
-  can never wipe the dev database. The GitHub Pages demo stays broken until the deploy
+  can never wipe the dev database (it also refuses `DATABASE_URL`'s database, `users_dev` and
+  non-local hosts unless `E2E_ALLOW_REMOTE_DB=1`), and never reuses a server already on its port. The GitHub Pages demo stays broken until the deploy
   ticket, and CI E2E needs Postgres (#47) (#46).
 
 ### Added

@@ -47,7 +47,8 @@ Open <http://localhost:5173>; `/api` is proxied to the API (set `API_PROXY_TARGE
 one). `pnpm e2e` starts its own API and **resets the database it points at before every test**, so it
 refuses to run without `E2E_DATABASE_URL`, a separate migrated and seeded database:
 `E2E_DATABASE_URL=postgres://app:app@localhost:5432/users_e2e pnpm e2e` (see
-[docs/testing.md](docs/testing.md)). For E2E tests, install the browser once:
+[docs/testing.md](docs/testing.md)). It also refuses the same database as `DATABASE_URL`, one named
+`users_dev`, and a non-local host (set `E2E_ALLOW_REMOTE_DB=1` to allow one). For E2E tests, install the browser once:
 
 ```bash
 pnpm --filter @app/web exec playwright install chromium

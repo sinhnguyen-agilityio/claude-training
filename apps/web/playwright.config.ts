@@ -2,8 +2,7 @@ import { defineConfig, devices } from '@playwright/test'
 
 import { resolveE2eEnv } from './e2e-env.ts'
 
-// E2E_PORT lets two worktrees run E2E at once. With one fixed port, reuseExistingServer below
-// would make the second run test the first worktree's build. E2E_API_PORT and E2E_DATABASE_URL
+// E2E_PORT lets two worktrees run E2E at once, each on its own port. E2E_API_PORT and E2E_DATABASE_URL
 // (required) are read the same way; see e2e-env.ts.
 const { port: PORT, apiPort: API_PORT, databaseUrl: DATABASE_URL } = resolveE2eEnv(process.env)
 
@@ -40,7 +39,10 @@ export default defineConfig({
       command: `pnpm build && node node_modules/vite/bin/vite.js preview --port ${PORT} --strictPort`,
       env: { API_PROXY_TARGET: `http://localhost:${API_PORT}` },
       url: `http://localhost:${PORT}`,
-      reuseExistingServer: true,
+      // Never reuse a server already on this port: another worktree's preview would carry its own
+      // API_PROXY_TARGET, so this run would hit that API and reset that database. A busy port fails
+      // the run instead; pick another with E2E_PORT.
+      reuseExistingServer: false,
       timeout: 120_000,
     },
   ],

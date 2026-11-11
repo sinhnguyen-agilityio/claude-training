@@ -28,14 +28,18 @@ How tests are written and run. Read this before adding or changing a test.
   plus a request can exceed 1 s under a coverage run.
 - jsdom applies no CSS. Tailwind v4 computes its palette colors as `oklch(...)`, not hex or rgb,
   which matters when asserting computed colors in Playwright.
-- E2E runs against the production build (`pnpm build && pnpm preview --port 4173`) and reuses a
-  server that is already running on that port. Set `E2E_PORT` (e.g. `E2E_PORT=4174 pnpm e2e`) when
-  another worktree may be running E2E; otherwise the run may test that worktree's build.
+- E2E runs against the production build (`pnpm build && pnpm preview --port 4173`) and never reuses a
+  server already on that port, so a second worktree's preview (with its own API target) is never
+  tested by mistake: a busy port fails the run. Set `E2E_PORT` (e.g. `E2E_PORT=4174 pnpm e2e`) and
+  `E2E_API_PORT` to run two worktrees at once.
 - **E2E gets its database from `E2E_DATABASE_URL`, which is required.** Playwright starts the API itself (`apps/api`, with
   `ALLOW_RESET=true`) on `E2E_API_PORT` (default 3101, so it never meets a `pnpm api:dev` on 3001),
   and the preview server proxies `/api` to it. Postgres must be running (`pnpm db:up`) with the
   migrations applied and the seed loaded (`pnpm db:migrate && pnpm db:seed`). `pnpm e2e` refuses
-  to start without `E2E_DATABASE_URL` (no fallback to `DATABASE_URL` or the dev database; the check is
+  to start without `E2E_DATABASE_URL` (no fallback to `DATABASE_URL`). It also refuses a value that is not a URL, is the
+  same database as `DATABASE_URL` (parsed URLs are compared: host, port, name), is named `users_dev`,
+  or has a host other than `localhost`, `127.0.0.1`, `::1` or `db` (the Compose service) unless
+  `E2E_ALLOW_REMOTE_DB=1` is set (the check is
   `apps/web/e2e-env.ts`, tested in `src/test/e2eEnv.test.ts`). **Every test starts with
   `POST /api/reset`** (the auto fixture in `tests/e2e/fixtures.ts`; every spec imports `test` and
   `expect` from it), which deletes all users in that database and re-inserts the 25 seed users.

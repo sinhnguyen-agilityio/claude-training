@@ -2,20 +2,12 @@
 import { describe, expect, it } from 'vitest'
 import { resolveE2eEnv } from '../../e2e-env'
 
-// POST /api/reset wipes the database the E2E API points at, so E2E must never fall back to the
-// dev database: it refuses to start without E2E_DATABASE_URL.
+// POST /api/reset wipes the database the E2E API points at, so resolveE2eEnv refuses to start
+// unless E2E_DATABASE_URL names a database that is plainly meant for E2E.
 describe('resolveE2eEnv', () => {
-  const DB = 'postgres://app:app@localhost:5432/users_e2e'
+  const DB = 'postgres://app:app@localhost:5432/e2e_46'
 
-  it('refuses to start without E2E_DATABASE_URL, even when DATABASE_URL is set', () => {
-    expect(() => resolveE2eEnv({})).toThrow(/E2E_DATABASE_URL/)
-    expect(() => resolveE2eEnv({ E2E_DATABASE_URL: '  ' })).toThrow(/E2E_DATABASE_URL/)
-    expect(() =>
-      resolveE2eEnv({ DATABASE_URL: 'postgres://app:app@localhost:5432/users_dev' }),
-    ).toThrow(/E2E_DATABASE_URL/)
-  })
-
-  it('uses the defaults for the ports', () => {
+  it('accepts a local E2E database and uses the default ports', () => {
     expect(resolveE2eEnv({ E2E_DATABASE_URL: DB })).toEqual({
       port: 4173,
       apiPort: 3101,
@@ -30,5 +22,65 @@ describe('resolveE2eEnv', () => {
       port: 4173,
       apiPort: 3101,
     })
+  })
+
+  it('refuses an unset or empty E2E_DATABASE_URL, even when DATABASE_URL is set', () => {
+    expect(() => resolveE2eEnv({})).toThrow(/E2E_DATABASE_URL is not set/)
+    expect(() => resolveE2eEnv({ E2E_DATABASE_URL: '  ' })).toThrow(/E2E_DATABASE_URL is not set/)
+    expect(() => resolveE2eEnv({ DATABASE_URL: DB })).toThrow(/E2E_DATABASE_URL is not set/)
+  })
+
+  it('refuses a value that is not a URL', () => {
+    expect(() => resolveE2eEnv({ E2E_DATABASE_URL: 'not a url' })).toThrow(/not a valid URL/)
+  })
+
+  it('refuses the same database as DATABASE_URL, comparing parsed URLs', () => {
+    const same = 'postgres://app:app@localhost:5432/e2e_46'
+    expect(() => resolveE2eEnv({ E2E_DATABASE_URL: DB, DATABASE_URL: same })).toThrow(
+      /same database as DATABASE_URL/,
+    )
+    // Different spelling, same database: default port, upper-case host, trailing slash.
+    expect(() =>
+      resolveE2eEnv({
+        E2E_DATABASE_URL: 'postgres://app:app@LOCALHOST/e2e_46/',
+        DATABASE_URL: 'postgresql://app:app@localhost:5432/e2e_46',
+      }),
+    ).toThrow(/same database as DATABASE_URL/)
+    // A different database on the same server is fine.
+    expect(
+      resolveE2eEnv({
+        E2E_DATABASE_URL: DB,
+        DATABASE_URL: 'postgres://app:app@localhost:5432/other',
+      }).databaseUrl,
+    ).toBe(DB)
+  })
+
+  it('refuses a database named users_dev', () => {
+    expect(() =>
+      resolveE2eEnv({ E2E_DATABASE_URL: 'postgres://app:app@localhost:5432/users_dev' }),
+    ).toThrow(/users_dev/)
+  })
+
+  it.each(['localhost', '127.0.0.1', '[::1]', 'db'])('accepts the local host %s', (host) => {
+    const url = `postgres://app:app@${host}:5432/users_e2e`
+    expect(resolveE2eEnv({ E2E_DATABASE_URL: url }).databaseUrl).toBe(url)
+  })
+
+  it('refuses a remote host unless E2E_ALLOW_REMOTE_DB=1', () => {
+    const remote = 'postgres://app:app@db.example.com:5432/users_e2e'
+    expect(() => resolveE2eEnv({ E2E_DATABASE_URL: remote })).toThrow(/E2E_ALLOW_REMOTE_DB=1/)
+    expect(() => resolveE2eEnv({ E2E_DATABASE_URL: remote, E2E_ALLOW_REMOTE_DB: 'true' })).toThrow(
+      /E2E_ALLOW_REMOTE_DB=1/,
+    )
+    expect(resolveE2eEnv({ E2E_DATABASE_URL: remote, E2E_ALLOW_REMOTE_DB: '1' }).databaseUrl).toBe(
+      remote,
+    )
+  })
+
+  it('does not print the password in an error', () => {
+    const remote = 'postgres://app:s3cret@db.example.com:5432/users_e2e'
+    expect(() => resolveE2eEnv({ E2E_DATABASE_URL: remote })).toThrow(/remote host db.example.com/)
+    expect(() => resolveE2eEnv({ E2E_DATABASE_URL: remote })).not.toThrow(/s3cret/)
+    expect(() => resolveE2eEnv({ E2E_DATABASE_URL: 'x://:s3cret@' })).toThrow(/not a valid URL/)
   })
 })
