@@ -106,6 +106,32 @@ In Git Bash on Windows, prefix both with `MSYS_NO_PATHCONV=1`. Otherwise Git Bas
 
 Setting it up once: **Settings → Pages → Source: GitHub Actions**.
 
+### Vercel and Neon (the hosted API)
+
+[vercel.json](vercel.json) deploys the web app and the API as **one Vercel project** (Root Directory
+= the repository root). Vercel serves `apps/web/dist` as static files, rewrites `/api/(.*)` to the
+function in [api/index.mjs](api/index.mjs) and every other path to `/index.html`, so reloading
+`/users/<id>` loads the SPA. The build command also runs `pnpm api:bundle`, which bundles
+`apps/api/src/vercel.ts` (the same `createApp()` that `server.ts` listens on) into the function.
+The function runs in `sin1`, next to the database. `git.deploymentEnabled` is `false`: the deploy
+comes from GitHub Actions (#49), not from Vercel's Git integration.
+
+Setting it up once, by hand:
+
+1. Create the Vercel project from this repository (Root Directory = the root).
+2. Create the database through the **Neon integration** in Vercel (Storage → Neon). It creates the
+   Neon project and sets `DATABASE_URL` (the pooled connection string) on the project; do not copy
+   a connection string by hand.
+3. Set `ALLOW_RESET=true` on the project (the demo's Reset button needs it).
+4. Run `pnpm db:migrate && pnpm db:seed` against Neon once, and again after a schema change
+   (migrations are manual, A1 of #48). Take the connection string from the Vercel dashboard and
+   keep it in your shell or an untracked `.env`; never commit it.
+5. Check `GET /api/health` on the deployed URL: 200 `{ "status": "ok" }`, or 503
+   `{ "message": "Database unavailable" }` when `select 1` fails or takes over 5 seconds.
+
+`DATABASE_URL` lives only in the Vercel project settings: it is not in the repository, and
+[.env.example](.env.example) holds placeholders. `.vercel/` (the local project link) is ignored.
+
 ## Scripts
 
 | Command              | What it does                                  |
