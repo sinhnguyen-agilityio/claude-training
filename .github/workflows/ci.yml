@@ -97,8 +97,9 @@ jobs:
           --health-retries 10
     env:
       DATABASE_URL: postgres://app:app@localhost:5432/users_dev
-      # Playwright refuses to start without it (#46): the service container, migrated and seeded below.
-      E2E_DATABASE_URL: postgres://app:app@localhost:5432/users_dev
+      # Playwright (#46) refuses a database that is DATABASE_URL, named users_dev or not local, so
+      # the E2E tests get their own database, users_e2e, created in the same service below.
+      E2E_DATABASE_URL: postgres://app:app@localhost:5432/users_e2e
     steps:
       - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v4
@@ -114,8 +115,14 @@ jobs:
       # itself, which needs the database migrated and seeded first (the per-test /api/reset
       # fixture restores the 25 seed users). main's config has no API yet, so these two steps
       # are harmless until then.
-      - run: pnpm db:migrate
-      - run: pnpm db:seed
+      - name: Create the E2E database
+        run: psql "$DATABASE_URL" -c 'CREATE DATABASE users_e2e'
+      - name: Migrate and seed the E2E database
+        run: |
+          pnpm db:migrate
+          pnpm db:seed
+        env:
+          DATABASE_URL: ${{ env.E2E_DATABASE_URL }}
       - run: pnpm --filter @app/web exec playwright install --with-deps chromium
       # timeout-minutes: 8 applies to this step only; the job-level 15 also covers install, the
       # Playwright download and the subpath smoke, and is intentional.
