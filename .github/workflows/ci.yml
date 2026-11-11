@@ -29,6 +29,8 @@ jobs:
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
+      # lint and typecheck cover the whole workspace and are repeated in web and api on purpose,
+      # so each job fails on its own and stays independent.
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm --filter @app/web test:coverage
@@ -65,8 +67,12 @@ jobs:
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
+      # lint and typecheck cover the whole workspace and are repeated in web and api on purpose,
+      # so each job fails on its own and stays independent.
       - run: pnpm lint
       - run: pnpm typecheck
+      # AC2 of #47. The tests build their own schema per file (createTestDb), so they do not need
+      # this; it checks that the migrations apply to a fresh database and matches the e2e job.
       - run: pnpm --filter @app/api db:migrate
       # Fails below the 80% threshold in apps/api/vitest.config.ts.
       - run: pnpm --filter @app/api test:coverage
@@ -102,11 +108,15 @@ jobs:
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
-      # Playwright starts the API (:3101) and the preview server itself; it needs the database
-      # migrated and seeded first. The per-test /api/reset fixture restores the 25 seed users.
+      # Needed once #46 lands: its Playwright config starts the API (:3101) and the preview server
+      # itself, which needs the database migrated and seeded first (the per-test /api/reset
+      # fixture restores the 25 seed users). main's config has no API yet, so these two steps
+      # are harmless until then.
       - run: pnpm db:migrate
       - run: pnpm db:seed
       - run: pnpm --filter @app/web exec playwright install --with-deps chromium
+      # timeout-minutes: 8 applies to this step only; the job-level 15 also covers install, the
+      # Playwright download and the subpath smoke, and is intentional.
       # The 59 tests take under a minute. Once they finished but Playwright never exited (run 39944427327),
       # so this step is capped, and DEBUG logs how the preview server is shut down if it happens again.
       - run: pnpm e2e

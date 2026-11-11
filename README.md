@@ -110,8 +110,8 @@ Setting it up once: **Settings → Pages → Source: GitHub Actions**.
 
 [.github/workflows/ci.yml](.github/workflows/ci.yml) runs the jobs `web`, `api`, `e2e`,
 `claude-hooks` and `security`. `api` and `e2e` each start a `postgres:16` service and apply the
-migrations first. **Owner:** the old `app` job no longer exists, so in the branch protection of
-`main` replace the required check `app` with `web`, `api` and `e2e`.
+migrations first. The old `app` job no longer exists. `main` has no required status checks today; if a
+required-checks rule is added later, it must list `web`, `api` and `e2e`.
 
 ## Scripts
 

@@ -5,7 +5,7 @@ How tests are written and run. Read this before adding or changing a test.
 > **CI jobs** (`.github/workflows/ci.yml`): `web` (lint, typecheck, web coverage), `api` (lint,
 > typecheck, migrations, API coverage against a `postgres:16` service), `e2e` (Playwright, with its
 > own `postgres:16` service and migrations), `claude-hooks` and `security`. Both coverage runs
-> enforce the 80% threshold of their package. These are the names to require in branch protection.
+> enforce the 80% threshold of their package. A required-checks rule, if one is added, must list `web`, `api` and `e2e`.
 
 > Until #46 merges, E2E runs against the browser's MSW mock. After it, MSW stays only as the
 > Vitest network layer and E2E runs against the Express API and PostgreSQL.
