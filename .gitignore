@@ -35,3 +35,6 @@ blob-report
 .env
 .env.*
 !.env.example
+
+# Vercel project link and build output
+.vercel
