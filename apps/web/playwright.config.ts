@@ -1,18 +1,11 @@
 import { defineConfig, devices } from '@playwright/test'
 
-// E2E_PORT lets two worktrees run E2E at once. With one fixed port, reuseExistingServer below
-// would make the second run test the first worktree's build.
-// An empty or non-numeric value falls back to the default instead of becoming port 0 or NaN.
-const PORT = Number(process.env.E2E_PORT) || 4173
+import { resolveE2eEnv } from './e2e-env.ts'
 
-// The API gets its own port so an E2E run never talks to (or resets) a `pnpm api:dev` on 3001.
-const API_PORT = Number(process.env.E2E_API_PORT) || 3101
-// POST /api/reset wipes the database the API points at. E2E_DATABASE_URL lets E2E use its own
-// database (migrated and seeded once) instead of the dev one.
-const DATABASE_URL =
-  process.env.E2E_DATABASE_URL ||
-  process.env.DATABASE_URL ||
-  'postgres://app:app@localhost:5432/users_dev'
+// E2E_PORT lets two worktrees run E2E at once. With one fixed port, reuseExistingServer below
+// would make the second run test the first worktree's build. E2E_API_PORT and E2E_DATABASE_URL
+// (required) are read the same way; see e2e-env.ts.
+const { port: PORT, apiPort: API_PORT, databaseUrl: DATABASE_URL } = resolveE2eEnv(process.env)
 
 export default defineConfig({
   testDir: './tests/e2e',

@@ -44,9 +44,9 @@ pnpm dev          # in a second terminal
 ```
 
 Open <http://localhost:5173>; `/api` is proxied to the API (set `API_PROXY_TARGET` to use another
-one). `pnpm e2e` needs the same database and migrations, starts its own API and **resets the
-database it points at before every test**, so give it its own, e.g.
-`E2E_DATABASE_URL=postgres://app:app@localhost:5432/users_e2e` (see
+one). `pnpm e2e` starts its own API and **resets the database it points at before every test**, so it
+refuses to run without `E2E_DATABASE_URL`, a separate migrated and seeded database:
+`E2E_DATABASE_URL=postgres://app:app@localhost:5432/users_e2e pnpm e2e` (see
 [docs/testing.md](docs/testing.md)). For E2E tests, install the browser once:
 
 ```bash
