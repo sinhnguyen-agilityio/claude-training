@@ -8,6 +8,9 @@ All notable changes to this project are listed here, newest first. The format fo
 
 ### Changed
 
+- CI: the `app` job is split into `web`, `api` and `e2e`. `api` and `e2e` run against a
+  `postgres:16` service with migrations applied, and the API's 80% coverage threshold is enforced.
+  The old `app` name is gone: a future required-checks rule must list `web`, `api` and `e2e` (#47).
 - The app calls the real API in every environment: Vite's dev and preview servers proxy `/api` to
   `http://localhost:3001` (`API_PROXY_TARGET` overrides it). The browser mock is gone
   (`mocks/browser.ts`, `public/mockServiceWorker.js` and the worker start in `main.tsx`); MSW stays
@@ -15,7 +18,7 @@ All notable changes to this project are listed here, newest first. The format fo
   database before each test, with one worker. It refuses to start without `E2E_DATABASE_URL`, so it
   can never wipe the dev database (it also refuses `DATABASE_URL`'s database, `users_dev` and
   non-local hosts unless `E2E_ALLOW_REMOTE_DB=1`), and never reuses a server already on its port. The GitHub Pages demo stays broken until the deploy
-  ticket, and CI E2E needs Postgres (#47) (#46).
+  ticket (#46).
 
 ### Added
 

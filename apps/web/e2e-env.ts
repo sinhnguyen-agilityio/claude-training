@@ -13,7 +13,8 @@ const fail = (reason: string): never => {
   )
 }
 
-// protocol-less, credential-less identity of a database: host, port and name.
+// protocol-less, credential-less identity of a database: host, port and name. They are compared as
+// parsed strings, so `db` and `localhost` for the same Compose database count as different (accepted).
 function identity(url: URL): string {
   const name = url.pathname.replace(/^\/+|\/+$/g, '')
   return `${url.hostname.toLowerCase()}:${url.port || '5432'}/${name}`

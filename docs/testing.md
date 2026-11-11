@@ -2,10 +2,15 @@
 
 How tests are written and run. Read this before adding or changing a test.
 
+> **CI jobs** (`.github/workflows/ci.yml`): `web` (lint, typecheck, web coverage), `api` (lint,
+> typecheck, migrations, API coverage against a `postgres:16` service), `e2e` (Playwright, with its
+> own `postgres:16` service and a separate `users_e2e` database, migrated and seeded), `claude-hooks` and `security`. Both coverage runs
+> enforce the 80% threshold of their package. A required-checks rule, if one is added, must list `web`, `api` and `e2e`.
+
 > MSW is the Vitest network layer only. E2E runs against the real Express API and PostgreSQL.
 
 - API tests (`apps/api`) use Vitest and supertest against `createApp()`: no port is opened. Tests
-  that touch the database need Postgres, so run `pnpm db:up` first (CI has a `postgres:16` service).
+  that touch the database need Postgres, so run `pnpm db:up` first (the CI `api` and `e2e` jobs have a `postgres:16` service).
   Run them with `pnpm --filter @app/api test`.
 - **A database per test file.** `createTestDb({ seed? })` from `apps/api/src/test/createTestDb.ts`
   creates a Postgres schema named `test_<random>`, applies the migrations in it (the `"public".`
@@ -38,7 +43,7 @@ How tests are written and run. Read this before adding or changing a test.
   migrations applied and the seed loaded (`pnpm db:migrate && pnpm db:seed`). `pnpm e2e` refuses
   to start without `E2E_DATABASE_URL` (no fallback to `DATABASE_URL`). It also refuses a value that is not a URL, is the
   same database as `DATABASE_URL` (parsed URLs are compared: host, port, name), is named `users_dev`,
-  or has a host other than `localhost`, `127.0.0.1`, `::1` or `db` (the Compose service) unless
+  or has a host other than `localhost`, `127.0.0.1`, `[::1]` (the URL form of IPv6 loopback) or `db` (the Compose service) unless
   `E2E_ALLOW_REMOTE_DB=1` is set (the check is
   `apps/web/e2e-env.ts`, tested in `src/test/e2eEnv.test.ts`). **Every test starts with
   `POST /api/reset`** (the auto fixture in `tests/e2e/fixtures.ts`; every spec imports `test` and
@@ -56,7 +61,7 @@ How tests are written and run. Read this before adding or changing a test.
   `tests/e2e/subpath.spec.ts` covers: the redirect, a reload on a user's page, create and reload,
   and that `/api` is still called at the root with no service worker. The reload is answered by `vite preview`'s own SPA fallback, so
   the `404.html` copy that Pages relies on (`deploy.yml`) is not tested here. The spec is skipped
-  unless `BASE_PATH` is set. CI runs it as a separate step after `pnpm e2e`. Locally:
+  unless `BASE_PATH` is set. CI runs it as a separate step of the `e2e` job after `pnpm e2e`. Locally:
 
   ```bash
   MSYS_NO_PATHCONV=1 BASE_PATH=/claude-training/ E2E_PORT=4180 pnpm --filter @app/web exec playwright test tests/e2e/subpath.spec.ts
