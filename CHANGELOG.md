@@ -8,6 +8,8 @@ All notable changes to this project are listed here, newest first. The format fo
 
 ### Added
 
+- `docs/agent-teams.md`: a reference for running Claude Code agent teams on this repo (when to use a
+  team, how to enable it, how to write the team prompt, the gates, worktrees and known limits) (#72).
 - `GET /api/users/export`: every user that matches `q`, `role`, `status`, `sort` and `order`, in the
   list's order, as `{ data, total }` with no paging and no row cap. `page` and `pageSize` are
   ignored, even invalid ones; an invalid filter is the list's 400. It shares the list's filter and
