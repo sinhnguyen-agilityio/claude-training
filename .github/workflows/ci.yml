@@ -260,17 +260,22 @@ Commit ${context.sha.slice(0, 7)}`
       - name: Deploy to production
         id: deploy
         run: echo "url=$(pnpm dlx vercel@65.14.0 deploy --prebuilt --prod)" >> "$GITHUB_OUTPUT"
-      # GET /api/health is 200 when the database answers, 503 when it does not (#48). The deployment
-      # can take a few seconds to serve, so it is retried before the job fails.
-      - name: Check /api/health
+      - name: Show the deployment URL
         env:
           DEPLOY_URL: ${{ steps.deploy.outputs.url }}
+        run: echo "Production deployment: $DEPLOY_URL" >> "$GITHUB_STEP_SUMMARY"
+      # GET /api/health is 200 when the database answers, 503 when it does not (#48). It is checked on
+      # the public production domain: the per-deployment URL can be behind Vercel Deployment Protection
+      # (401). The new deployment can take a few seconds to be served, so it is retried.
+      - name: Check /api/health
+        env:
+          HEALTH_URL: https://snuser-mn.vercel.app/api/health
         run: |
           for attempt in 1 2 3 4 5; do
-            code=$(curl -s -o /dev/null -w '%{http_code}' "$DEPLOY_URL/api/health" || true)
+            code=$(curl -s -o /dev/null -w '%{http_code}' "$HEALTH_URL" || true)
             echo "attempt $attempt: HTTP $code"
             if [ "$code" = "200" ]; then exit 0; fi
             sleep 10
           done
-          echo "::error::$DEPLOY_URL/api/health did not return 200"
+          echo "::error::$HEALTH_URL did not return 200"
           exit 1
